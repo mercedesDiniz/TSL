@@ -11,6 +11,8 @@ baseado em Arduino:
 
 ![alt text](imgs/planta1.jpg)
 
+**Biblioteca para aquisição de dados:**
+- [DaqDuino](https://www.mathworks.com/matlabcentral/fileexchange/50784-daqduino)
 
 **Códigos**:
  - [control_test.m](https://www.dropbox.com/scl/fo/jfhxgk939bcj9j1bv7h46/AGaA1JxgWRbU2PpQXD6CEw4/Aulas/Aula02e03e04e05e06?preview=control_test.m&rlkey=cxq7xpizvo950ml8dhoqop8m8&st=tdgjartd&dl=0)
