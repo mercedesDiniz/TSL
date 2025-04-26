@@ -29,8 +29,8 @@ xlabel('Time [s]'); ylabel('Longitudinal Thrust')
 % Estimação dos parametros da eq. das diferenças
 
 % Fatiando o datalog
-t_i = 1; N_i = round(t_i/Ts);
-t_f = 4; N_f = round(t_f/Ts);
+t_i = 10; N_i = round(t_i/Ts);
+t_f = 20; N_f = round(t_f/Ts);
 u_i = u(N_i:N_f); y_i = y(N_i:N_f); N_id = length(y_i);
 
 % Met. de Minimos Quadrados
@@ -52,18 +52,15 @@ for n = 3:N
 end
 
 %% Plot do modelo identificado
-%figure;
-% t = (0:length(u)-1) * Ts;
-% 
-% figure;
-% plot(t, u, 'r', 'LineWidth', 1.5); hold on;
-% plot(t, y, 'b', 'LineWidth', 1.5);
-% plot(t, ym, 'k--', 'LineWidth', 1.5);
-% legend('u(t) - Entrada', 'y(t) - Saída Real', 'ym(t) - Saída Estimada', 'Location', 'Best');
-% xlabel('Time (s)');
-% ylabel('Amplitude');
-% title('Comparação entre Entrada, Saída Real e Saída Estimada');
-% grid on;
+figure;
+%plot(t, u, 'r', 'LineWidth', 1); hold on;
+plot(t, y, 'b', 'LineWidth', 1);  hold on;
+plot(t(1:length(t)-1), ym, 'k', 'LineWidth', 1);
+
+legend('y(t)', 'ym(t)', 'Location', 'northeast');
+xlabel('Time (s)'); ylabel('Amplitude');
+title('Comparação entre o Sistema Real e o Modelado');
+grid on;
 
 
 
