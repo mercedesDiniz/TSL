@@ -61,5 +61,9 @@ xlabel('Time (s)'); ylabel('Amplitude');
 title('Comparação entre o Sistema Real e o Modelo de 2ª Ordem');
 grid on;
 
-
+%% Salvando o modelo
+model.Az = [1 a1 a2];
+model.Bz = [0 b0 b1];
+model.Ts = Ts;
+save 'sys_mod01.mat' model;
 
