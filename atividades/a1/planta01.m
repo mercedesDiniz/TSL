@@ -24,7 +24,7 @@ xlabel('Time [s]'); ylabel('Longitudinal Thrust')
 
 %% Modelagem da Planta - 2ª Ordem
 % G(z) = Y(Z)/U(Z) = b0*z^(-1) + b1*z^(-2) / 1 + a1*z^(-1) + a2*z^(-2)
-% y[n] = -a1*ym(n-1) -a2*y(n-2) + b0*u(n-1) + b1*u(n-2);
+% y[n] = -a1*y(n-1) -a2*y(n-2) + b0*u(n-1) + b1*u(n-2);
 
 % Estimação dos parametros da eq. das diferenças
 
