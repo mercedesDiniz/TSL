@@ -15,7 +15,7 @@ N = round( tfinal/Ts ); % numero total de amostras
 
 %% Controlador PID
 % Utilizando o modelo de 2ª ordem para sintonia 
-kp = 0.5; ki = 1; kd = 0.3;
+kp = -1; ki = -0.5; kd =-0.01;
 
 % Aproximação Backward Difference
 s0 = kp +ki*Ts +kd/Ts;
@@ -54,7 +54,7 @@ t = (0:N-1)' * Ts;
 subplot(2,1,1)
 plot(t, r, 'k--', 'LineWidth', 1.2); hold on;
 plot(t, ym, 'b', 'LineWidth', 1.5);
-legend('Referência r(k)', 'Saída ym(k)', 'Location', 'southeast');
+legend('Referência r(k)', 'Saída ym(k)', 'Location', 'northeast');
 xlabel('Tempo [s]');
 ylabel('Velocidade [m/s]');
 title('Resposta do Sistema ao Degrau Unitário');
@@ -70,26 +70,26 @@ grid on;
 %% Analise no Dominio da freq.
 % Difinindo a func. de transferencia do controlador
 % C(z) = s0 + s1*z^(-1) + s2*z^(-2) /  1 + z^(-1)
-Cz = tf([s0 s1 s2],[1  -1  0],Ts);
+% Cz = tf([s0 s1 s2],[1  -1  0],Ts);
 
-figure; margin(Cz*Gz); 
+%figure; margin(Cz*Gz); 
 
 % Funcao de transferencia de malha fechada
-Gmfz1 = feedback(Cz*Gz,1,-1); % C(z)*G(z) / 1-C(z)*G(z) 
-disp('Closed-loop poles: '); pole(Gmfz1)
-disp('Closed-loop zeros: '); zero(Gmfz1)
+% Gmfz1 = feedback(Cz*Gz,1,-1); % C(z)*G(z) / 1-C(z)*G(z) 
+% disp('Closed-loop poles: '); pole(Gmfz1)
+% disp('Closed-loop zeros: '); zero(Gmfz1)
 
 % Analise de estabilidade relativa em malha fechada
 % Calculo das margens de ganho e de fase aproximadas
-Tsen = Gmfz1;           % função de co-sensibilidade
-Ssen = 1 -Tsen;         % função de sensibilidade
-mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
-GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
-Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+% Tsen = Gmfz1;           % função de co-sensibilidade
+% Ssen = 1 -Tsen;         % função de sensibilidade
+% mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
+% GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+% Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
 
-disp('Gain and Phase margins obtained by closed-loop analysis:');
-disp('GmdB = '); disp(GmdB);
-disp('Pmdeg = '); disp(Pmdeg);
+% disp('Gain and Phase margins obtained by closed-loop analysis:');
+% disp('GmdB = '); disp(GmdB);
+% disp('Pmdeg = '); disp(Pmdeg);
 
 % Plot da func. de sensibilidade e co-sensibilidade no dominio da freq
 %figure; sigma(Tsen); hold; sigma(Ssen); grid;
