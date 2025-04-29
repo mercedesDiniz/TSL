@@ -15,7 +15,7 @@ N = round( tfinal/Ts ); % numero total de amostras
 
 %% Controlador PID
 % Utilizando o modelo de 2ª ordem para sintonia 
-kp = -1; ki = -0.5; kd =-0.01;
+kp = -1.2; ki = -0.5; kd =-0.01;
 
 % Aproximação Backward Difference
 s0 = kp +ki*Ts +kd/Ts;
@@ -79,32 +79,32 @@ t_settle = t(idx_settle);
 fprintf('Settling time: %.2f s\n', t_settle);
 
 %% Analise no Dominio da freq.
-% Difinindo a func. de transferencia do controlador
+% Definindo a func. de transferencia do controlador
 % C(z) = s0 + s1*z^(-1) + s2*z^(-2) /  1 + z^(-1)
 Cz = tf([s0 s1 s2],[1  -1  0],Ts);
-
-%figure; margin(Cz*Gz); 
-
-% Funcao de transferencia de malha fechada
+% 
+% figure; margin(Cz*Gz); 
+% 
+% % Funcao de transferencia de malha fechada
 % Gmfz1 = feedback(Cz*Gz,1,-1); % C(z)*G(z) / 1-C(z)*G(z) 
 % disp('Closed-loop poles: '); pole(Gmfz1)
 % disp('Closed-loop zeros: '); zero(Gmfz1)
-
-% Analise de estabilidade relativa em malha fechada
-% Calculo das margens de ganho e de fase aproximadas
+% 
+% % Analise de estabilidade relativa em malha fechada
+% % Calculo das margens de ganho e de fase aproximadas
 % Tsen = Gmfz1;           % função de co-sensibilidade
 % Ssen = 1 -Tsen;         % função de sensibilidade
 % mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
 % GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
 % Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
-
-% disp('Gain and Phase margins obtained by closed-loop analysis:');
-% disp('GmdB = '); disp(GmdB);
-% disp('Pmdeg = '); disp(Pmdeg);
-
-% Plot da func. de sensibilidade e co-sensibilidade no dominio da freq
-%figure; sigma(Tsen); hold; sigma(Ssen); grid;
-%legend('|Tsen|','|Ssen|');
+% 
+% fprintf('Gain and Phase margins obtained by closed-loop analysis:\n');
+% fprintf('Gm = %.2f dB\n', GmdB);
+% fprintf('Pm = %.2f deg\n', Pmdeg);
+% 
+% % Plot da func. de sensibilidade e co-sensibilidade no dominio da freq
+% figure; sigma(Tsen); hold; sigma(Ssen); grid;
+% legend('|Tsen|','|Ssen|');
 
 %% Salvando o controlador
 control.kp = kp;
