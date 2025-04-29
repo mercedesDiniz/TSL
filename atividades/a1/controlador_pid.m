@@ -70,7 +70,7 @@ grid on;
 %% Analise no Dominio da freq.
 % Difinindo a func. de transferencia do controlador
 % C(z) = s0 + s1*z^(-1) + s2*z^(-2) /  1 + z^(-1)
-% Cz = tf([s0 s1 s2],[1  -1  0],Ts);
+Cz = tf([s0 s1 s2],[1  -1  0],Ts);
 
 %figure; margin(Cz*Gz); 
 
