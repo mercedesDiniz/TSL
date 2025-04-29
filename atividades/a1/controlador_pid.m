@@ -67,6 +67,17 @@ ylabel('Sinal de Controle u(k)');
 title('Ação de Controle PID');
 grid on;
 
+%% Analise das restricoes
+% Sobressinal máximo
+overshoot = ((max(ym) - r(end)) /  r(end)) * 100;
+fprintf('Overshoot: %.2f %%\n', overshoot);
+
+% Tempo de assentamento
+tol = 0.05 * r(end); % tolerancia de 5%
+idx_settle = find(abs(ym - r(end)) > tol, 1, 'last'); % ultimo indice onde a resposta ainda estava fora da faixa
+t_settle = t(idx_settle);
+fprintf('Settling time: %.2f s\n', t_settle);
+
 %% Analise no Dominio da freq.
 % Difinindo a func. de transferencia do controlador
 % C(z) = s0 + s1*z^(-1) + s2*z^(-2) /  1 + z^(-1)
