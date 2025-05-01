@@ -74,8 +74,11 @@ fprintf('Overshoot: %.2f %%\n', overshoot);
 
 % Tempo de assentamento
 tol = 0.05 * r(end); % tolerancia de 5%
-idx_settle = find(abs(ym - r(end)) > tol, 1, 'last'); % ultimo indice onde a resposta ainda estava fora da faixa
-t_settle = t(idx_settle);
+
+idx_start = find(r > 0, 1, 'first');  % indice do inicio do degrau
+idx_settle = find(abs(ym - r(end)) > tol, 1, 'last'); % indice onde y se aproxima de r
+
+t_settle = t(idx_settle) - t(idx_start);
 fprintf('Settling time: %.2f s\n', t_settle);
 
 %% Analise no Dominio da freq.
