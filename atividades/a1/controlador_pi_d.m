@@ -16,7 +16,9 @@ N = round( tfinal/Ts ); % numero total de amostras
 %% Controlador PI-D
 % Utilizando os mesmos valores de kp, ki e kd obtidos da sintonia do PID
 load('control_pid.mat');
-kp = control.kp; ki = control.ki; kd = control.kd;
+kp = control.kp; 
+ki = control.ki;
+kd = control.kd;
 
 % Aproximação Backward Difference
 s0 = kp +ki*Ts +kd/Ts;
@@ -38,7 +40,7 @@ for k = 3:N
     ym(k) = -a1*ym(k-1) -a2*ym(k-2) +b0*um(k-1) +b1*um(k-2); 
 
     %% Calcular o sinal de controle 
-    um(k) = um(k-1) +(kp + ki*Ts)*r(k) -kp*r(k-1) - s0*ym(k) + s1*ym(k-1) + s2*ym(k-2);
+    um(k) = um(k-1) +(kp + ki*Ts)*r(k) -kp*r(k-1) - s0*ym(k) - s1*ym(k-1) - s2*ym(k-2);
     
     % Limitando o sinal de controle 
     if um(k) <= -1
