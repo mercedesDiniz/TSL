@@ -31,7 +31,7 @@ end
 
 %% Perturbação de carga: 30% da referência
 pert = zeros(N,1);
-pert(round(30/Ts):end) = 0.3 * r(end);
+%pert(round(30/Ts):end) = 0.3 * r(end);
 
 %% Simulacao
 for k = 4:N
