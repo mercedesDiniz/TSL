@@ -52,66 +52,21 @@ Este repositório documenta as atividades, materiais de apoio e anotações refe
 - **Prova Final**: 30%
 
 ---
-
-## 📅 Registro das Aulas
-
-### Aula 01 — *26/03/2025*
-- Apresentação da disciplina: ementa, cronograma, bibliografia e sistema de avaliação.
-
----
-
-### Aula 02 — *31/03/2025*
-- Projeto exemplo de sistemas de controle:
-  - Modelagem
-  - Projeto de controladores
-  - Análise no domínio do tempo e da frequência
-
----
-
-### Aula 03 — *02/04/2025*
-- Continuação do estudo de caso: modelagem, projeto e análise de controladores.
-
----
-
-### Aula 04 — *07/04/2025*
-- Continuação do estudo de caso:
-  - Modelagem experimental (Identificação de Sistemas)
-    - Estimador paramétrico por Mínimos Quadrados
-  - Projeto de controlador PID digital a partir do PID contínuo por aproximação
-
----
-
-### Aula 05 — *09/04/2025*
-- Continuação da modelagem e controle:
-  - Implementação de controlador PID digital
-  - Sintonia por tentativa e erro
-
----
-
-### Aula 06 — *14/04/2025*
-- Continuação da análise do projeto:
-  - Identificação de sistemas via mínimos quadrados
-  - Implementação e sintonia do PID digital
-  - Estabilidade relativa:
-    - Resposta em frequência: métodos em malha aberta e fechada
-  - Sintonias baseadas em modelo:
-    - Alocação de polos
-    - Métodos ótimos
-
----
-
 ## 📂 Estrutura do Repositório 
 
 ```bash
+├── atividades
+│   ├── a1
+│   ├── lista01
+│   └── ...
 ├── aulas/
-│   ├── aula02a06/
+│   ├── aula02a07/
 |   |   ├── imgs/
 |   |   └── notas.md
+│   ├── aula08
 │   └── ...
 ├── bibliografia/
 │   ├── artigos/
-│   └── ...
-├── projetos/
 │   └── ...
 ├── provas_e_exercicios
 │   ├── 2017-1
