@@ -31,13 +31,15 @@ end
 
 %% Perturbação de carga: 30% da referência
 pert = zeros(N,1);
-%pert(round(30/Ts):end) = 0.3 * r(end);
+pert(round(30/Ts):end) = 0.3 * r(end); % comente essa linha para simular sem a perturbação
 
 %% Simulacao
 for k = 4:N
     % Planta
-    ym1(k) = -a1*ym1(k-1) -a2*ym1(k-2) -a3*ym1(k-3) +b0*um1(k-1) +b1*um1(k-2) +b2*um1(k-3) + pert(k);  
-    ym2(k) = -a1*ym2(k-1) -a2*ym2(k-2) -a3*ym2(k-3) +b0*um2(k-1) +b1*um2(k-2) +b2*um2(k-3) + pert(k);
+    ym1(k) = -a1*ym1(k-1) -a2*ym1(k-2) -a3*ym1(k-3) +b0*um1(k-1) +b1*um1(k-2) +b2*um1(k-3) + ...
+        pert(k) + a1*pert(k-1) + a2*pert(k-2) +a3*pert(k-3) ;  
+    ym2(k) = -a1*ym2(k-1) -a2*ym2(k-2) -a3*ym2(k-3) +b0*um2(k-1) +b1*um2(k-2) +b2*um2(k-3) + ...
+        pert(k) + a1*pert(k-1) + a2*pert(k-2) + a3*pert(k-3) ;
 
     % Calcular o sinal de controle do PID
     um1(k) = um1(k-1) + s0*(r(k)-ym1(k)) + s1*(r(k-1)-ym1(k-1)) + s2*(r(k-2)-ym1(k-2));
