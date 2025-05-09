@@ -57,7 +57,7 @@ plot(t, y, 'b', 'LineWidth', 1);  hold on;
 plot(t(1:length(t)-1), ym, 'k', 'LineWidth', 1);
 
 legend('y(t)', 'ym(t)', 'Location', 'northeast');
-xlabel('Time (s)'); ylabel('Amplitude');
+xlabel('Time [s]'); ylabel('Velocidade [m/s]');
 title('Comparação entre o Sistema Real e o Modelo de 2ª Ordem');
 grid on;
 

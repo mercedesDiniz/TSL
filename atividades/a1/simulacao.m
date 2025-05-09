@@ -84,7 +84,7 @@ figure;
 subplot(2,1,1);
 plot((0:N-1)*Ts, r, '--k', (0:N-1)*Ts, ym1, 'b', (0:N-1)*Ts, ym2, 'r');
 legend('Referência', 'y - PID', 'y - PI-D');
-ylabel('Amplitide (V)'); title('Resposta dos Sistemas');
+ylabel('Velocidade [m/s]'); title('Resposta dos Sistemas');
 
 subplot(2,1,2);
 plot((0:N-1)*Ts, um1, 'b', (0:N-1)*Ts, um2, 'r');
