@@ -48,6 +48,22 @@ Da = 0;
 % Ca = [Cd, 0];
 
 sys_ss_d_a = ss(Aa,Ba,Ca,Da,Ts)
+
+%% Verificação de controlabilidade e observabilidade
+Co = ctrb(Ad, Bd); Ob = obsv(Ad, Cd);
+
+if rank(Co) == size(Ad,1)
+    disp("Sistema Controlável");
+else
+    warning("Sistema NÃO é Controlável");
+end
+
+if rank(Ob) == size(Ad,1)
+    disp("Sistema Observável");
+else
+    warning("Sistema NÃO é Observável");
+end
+
 %% LQR
 
 % Análise de estabilidade relativa via margens de ganho e de fase
