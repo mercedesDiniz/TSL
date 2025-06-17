@@ -135,10 +135,10 @@ for k = 2:N
     u(k) = u(k-1) + du(k);
 
     % Estados estimados individualmente
-    x1e(k) = xa(2,k);
-    x2e(k) = xa(3,k);
-    x3e(k) = xa(4,k);
-    x4e(k) = xa(5,k);
+%     x1e(k) = xa(2,k);
+%     x2e(k) = xa(3,k);
+%     x3e(k) = xa(4,k);
+%     x4e(k) = xa(5,k);
 end
 
 % calculo da Função Custo
@@ -162,18 +162,18 @@ subplot(2,1,2)
     title('Sinal de controle');
 
 % Estados estimados vs reais
-figure;
-subplot(4,1,1)
-    plot(t, x(1,:), 'b'); hold on; plot(t, x1e, 'r:'); ylabel('x');
-subplot(4,1,2)
-    plot(t, x(2,:), 'b'); hold on; plot(t, x2e, 'r:'); ylabel('x_{dot}');
-subplot(4,1,3)
-    plot(t, x(3,:), 'b'); hold on; plot(t, x3e, 'r:'); ylabel('\phi');
-subplot(4,1,4)
-    plot(t, x(4,:), 'b'); hold on; plot(t, x4e, 'r:'); ylabel('\phi_{dot}');
-xlabel('Tempo [s]');
-sgtitle('Estados reais vs. estimados');
-legend('Real', 'Estimado');
+% figure;
+% subplot(4,1,1)
+%     plot(t, x(1,:), 'b'); hold on; plot(t, x1e, 'r:'); ylabel('x');
+% subplot(4,1,2)
+%     plot(t, x(2,:), 'b'); hold on; plot(t, x2e, 'r:'); ylabel('x_{dot}');
+% subplot(4,1,3)
+%     plot(t, x(3,:), 'b'); hold on; plot(t, x3e, 'r:'); ylabel('\phi');
+% subplot(4,1,4)
+%     plot(t, x(4,:), 'b'); hold on; plot(t, x4e, 'r:'); ylabel('\phi_{dot}');
+% xlabel('Tempo [s]');
+% sgtitle('Estados reais vs. estimados');
+% legend('Real', 'Estimado');
 
 
 
