@@ -111,8 +111,8 @@ Ob = obsv(Aa,Ca)
     
     % Solving the Kalman Filter problem using the LQR method
               % xa1 xa2  xa3
-    Qkf = diag([ 1   1   1   ]);
-    Rkf = 1;
+    Qkf = diag([ 1   1   1   ]); Qkf = Ca'*Ca;
+    Rkf = 1e6;
     L = (dlqr(Aa',Ca',Qkf,Rkf))'; disp('MATLAB KF L ='); disp(L);
     
         % Solving the Observer DARE (Difference Algebraic Riccati Equation)
@@ -130,7 +130,7 @@ tfinal = 10; % total simulation time in seconds
 N = round( tfinal/Ts ); % total number of samples
 t = 0:Ts:N*Ts-Ts; % time vector for the plots
 
-    r1(1:5)=0; r1(6:N)=0;
+    r1(1:5)=0; r1(6:N)=1;
 
     % Disturbances at the output
       w = 0*wgn(1,N, 1e-3, 'linear'); % Noise
@@ -212,6 +212,42 @@ subplot(212)
     plot(t,x2e,'r');
     ylabel('xa_2(t)');
 
+
+%% Frequency response analysis for the LQR system
+Tsen = ss(Aa-Ba*K,Ba*K(1),Ca,Da,Ts);
+Ssen = eye(1,1)-Tsen; % SISO case, the number of outputs ny=1
+
+mt = max( sigma(Tsen) );
+ms = max( sigma(Ssen) );
+
+GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+disp('Gain and Phase margins obtained by closed-loop analysis:');
+disp('GmdB = '); disp(GmdB);
+disp('Pmdeg = '); disp(Pmdeg);
+
+figure; sigma(Tsen); hold; sigma(Ssen); grid;
+legend('|Tsen|','|Ssen|');
+
+%% Frequency response analysis for the Kalman Filter system
+clear Tsen Ssen mt ms GmdB Pmdeg
+Tsen = ss(Aa-L*Ca,L,Ca,Da,Ts);
+Ssen = eye(1,1)-Tsen; % SISO case, the number of outputs ny=1
+
+mt = max( sigma(Tsen) );
+ms = max( sigma(Ssen) );
+
+GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+disp('Kalman Filter analysis:');
+disp('Gain and Phase margins obtained by closed-loop analysis:');
+disp('GmdB = '); disp(GmdB);
+disp('Pmdeg = '); disp(Pmdeg);
+
+figure; sigma(Tsen); hold; sigma(Ssen); grid;
+legend('|Tsen|','|Ssen|'); title('Kalman Filter Sensitivities');
 
 
 
