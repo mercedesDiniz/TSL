@@ -58,71 +58,76 @@ end
 
 %% Controlador LQR
               %x x_dot phi phi_dot int   
-Q_lqr = diag([10    1   100   1     50]);   % ponderação das variaveis de estados
+Q_lqr = diag([1    1   100   100     1]);   % ponderação das variaveis de estados
 R_lqr = 1;                                  % ponderação do sinal de controle
 
 K = dlqr(Aa,Ba,Q_lqr,R_lqr)
 
-% Analise de estabilidade relativa via margens de ganho e de fase
-Cz_lqr = ss(Aa - Ba*K, Ba, -K, 0, Ts);  % controlador LQR
-LoopGain_lqr = sys_ss_d_a * Cz_lqr;                 % malha aberta
-
-I = eye(size(LoopGain_lqr.C,1));
-
-Tsen = feedback(LoopGain_lqr, I);   % Co-sensibilidade
-Ssen = feedback(I, LoopGain_lqr);   % Sensibilidade
-
-mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
-
-GmdB_lqr = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) )
-Pmdeg_lqr = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) )
+% Analise de estabilidade relativa via margens de ganho e de fase (TODO: validacao pendente)
+% Cz_lqr = ss(Aa - Ba*K, Ba, -K, 0, Ts);  % controlador LQR
+% LoopGain_lqr = sys_ss_d_a * Cz_lqr;                 % malha aberta
+% 
+% I = eye(size(LoopGain_lqr.C,1));
+% 
+% Tsen = feedback(LoopGain_lqr, I);   % Co-sensibilidade
+% Ssen = feedback(I, LoopGain_lqr);   % Sensibilidade
+% 
+% mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
+% 
+% GmdB_lqr = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) )
+% Pmdeg_lqr = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) )
 
 %% Filtro de Kalman (Observador)
-Q_kf = diag([ 1   1   1   1  1]);
+Q_kf = diag([ 1   1   100   100  1]);
 R_kf = 1;
 L = (dlqr(Aa',Ca',Q_kf,R_kf))' % metodo LQR
 
-% Analise de estabilidade relativa via margens de ganho e de fase
-Cz_kf = ss(Aa - L*Ca, L, -K, 0, Ts);
-LoopGain_kf = sys_ss_d_a * Cz_kf;
-
-Tsen = feedback(LoopGain_kf, eye(size(LoopGain_kf.C,1)));
-Ssen = feedback(eye(size(LoopGain_kf.C,1)), LoopGain_kf);
-
-mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
-
-GmdB_kf = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) )
-Pmdeg_kf = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) )
+% Analise de estabilidade relativa via margens de ganho e de fase (TODO: validacao pendente)
+% Cz_kf = ss(Aa - L*Ca, L, -K, 0, Ts);
+% LoopGain_kf = sys_ss_d_a * Cz_kf;
+% 
+% Tsen = feedback(LoopGain_kf, eye(size(LoopGain_kf.C,1)));
+% Ssen = feedback(eye(size(LoopGain_kf.C,1)), LoopGain_kf);
+% 
+% mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
+% 
+% GmdB_kf = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) )
+% Pmdeg_kf = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) )
 
 %% Compensador dinâmico completo LQG
 
-% Condições iniciais
-tfinal = 10; % tempo de simulação (s)
-N = round(tfinal/Ts); 
-t = 0:Ts:N*Ts-Ts;
+% Configurações da simulação
+tfinal = 10;                % tempo de simulação (s)
+N = round(tfinal/Ts);       % numero de amostras
+t = 0:Ts:N*Ts-Ts;           
 
+% Condições iniciais
 x(:,1) = [0.1; 0; 0.1; 0];   % posição, velocidade, angulo, velocidade angular
 xa(:,1) = [0; 0; 0; 0; 0];   % integrador + estados estimados
 
 y(1) = C*x(:,1);             % saida medida inicial
 ya(1) = Ca*xa(:,1);          % saida estimada inicial
 
-x1e(1) = xa(2,1); x2e(1) = xa(3,1);
-x3e(1) = xa(4,1); x4e(1) = xa(5,1);
+x1e(1) = xa(2,1); 
+x2e(1) = xa(3,1);
+x3e(1) = xa(4,1);
+x4e(1) = xa(5,1);
 
 % Disturbios na entrada e saida
-w = 1*wgn(1,N, 1e-3, 'linear'); 
+w = 1*wgn(1,N, 1e-3, 'linear');
+% w2(1:round(N/2))=0; w2(round(N/2)+1:N)=+0.02; 
 v = 1*wgn(1,N, 1e-3, 'linear'); 
+v2(1:round(N/2))=0; v2(round(N/2)+1:N)=+0.2*0;
 
 ref(1:round(N/6))= 0; ref(round(N/6):N)=1;   % referencia 
 u = zeros(1, N);    % controle aplicado
-du = zeros(1, N);   % incremento de controle
+du = zeros(1, N);  
 
 % Simulação
 for k = 2:N
     % Sistema real
-    x(:,k) = Ad*x(:,k-1) + Bd*u(k-1) + [0;0;0;0];  % pode adicionar perturbações aqui
-    y(k) = C*x(:,k) + v(k);                        % saída com ruído de medição
+    x(:,k) = Ad*x(:,k-1) + Bd*u(k-1) + [1;0;0;0]*w(k); 
+    y(k) = C*x(:,k) + v(k) +v2(k);                        
     
     % Estimador de estados (Filtro de Kalman com integrador)
     xa(:,k) = Aa*xa(:,k-1) + Ba*du(k-1) + L*( y(k-1) - ya(k-1) );
@@ -141,7 +146,7 @@ for k = 2:N
 %     x4e(k) = xa(5,k);
 end
 
-% calculo da Função Custo
+% Calculo da Função Custo (TODO: validacao pendente)
 J = sum(x(3,:).^2 + u.^2)
 
 %% Plots
