@@ -18,17 +18,19 @@ A = [0      1              0           0;
 
 B = [0; (I+m*l^2)/p; 0; m*l/p];
 
-C = [1 0 0 0]; % apenas o angulo do pendulo é medido
-%      0 0 1 0];
+C = [1 0 0 0]; %[0 0 1 0 0] % apenas o angulo do pendulo é medido 
 
-D = 0;% 0]
+D = [0];
 
-sys_ss_c = ss(A,B,C,D, 'statename', {'x' 'x_dot' 'phi' 'phi_dot'}, 'inputname',{'u'}, 'outputname', {'phi'})
+sys_ss_c = ss(A,B,C,D, ...
+    'statename', {'x' 'x_dot' 'phi' 'phi_dot'}, ...
+    'inputname',{'u'}, ...
+    'outputname', {'y'});
 
 % Modelo de Espaço de Estado Discreto
 Ts = 0.01; % s
 sys_ss_d = c2d(sys_ss_c,Ts)
-[Ad,Bd,Cd,Dd] = ssdata(sys_ss_d);
+[Ad, Bd, Cd, Dd] = ssdata(sys_ss_d);
 
 % Modelo Aumentando de Espaço de Estado Discreto
 % Adicionar o integrador
@@ -36,7 +38,7 @@ Aa = [1,     Cd*Ad;
        zeros(size(Ad,1),1), Ad];  
 Ba = [Cd*Bd;
        Bd];
-Ca = [1, zeros(1, size(Ad,1))];     % só mede a variavel integrada
+Ca = [1 0 0 0 0];    % [0 0 1 0 0]
 Da = 0;
 
 sys_ss_d_a = ss(Aa,Ba,Ca,Da,Ts)
@@ -57,42 +59,54 @@ else
 end
 
 %% Controlador LQR
-              %x x_dot phi phi_dot int   
-Q_lqr = diag([1    1   100   100     1]);   % ponderação das variaveis de estados
-R_lqr = 1;                                  % ponderação do sinal de controle
+             % x  x_dot  phi  phi_dot  int   
+Q_lqr = diag([ 1    1    100    100     1]);   % ponderação das variaveis de estados
+R_lqr = 1;                                     % ponderação do sinal de controle
 
 K = dlqr(Aa,Ba,Q_lqr,R_lqr)
 
-% Analise de estabilidade relativa via margens de ganho e de fase (TODO: validacao pendente)
-% Cz_lqr = ss(Aa - Ba*K, Ba, -K, 0, Ts);  % controlador LQR
-% LoopGain_lqr = sys_ss_d_a * Cz_lqr;                 % malha aberta
-% 
-% I = eye(size(LoopGain_lqr.C,1));
-% 
-% Tsen = feedback(LoopGain_lqr, I);   % Co-sensibilidade
-% Ssen = feedback(I, LoopGain_lqr);   % Sensibilidade
-% 
-% mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
-% 
-% GmdB_lqr = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) )
-% Pmdeg_lqr = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) )
+%% Analise da resposta em frequencia do LQR
+Tsen = ss(Aa-Ba*K,Ba*K(1),Ca,Da,Ts); % TODO: K(3) ou K(1)?
+Ssen = eye(1,1)-Tsen; 
+
+mt = max( sigma(Tsen) );
+ms = max( sigma(Ssen) );
+
+GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+disp('Análise LQG');
+disp('Margens de ganho e fase obtidas por análise de malha fechada:');
+disp('GmdB = '); disp(GmdB);
+disp('Pmdeg = '); disp(Pmdeg);
+
+figure; sigma(Tsen); hold; sigma(Ssen); grid;
+legend('|Tsen|','|Ssen|'); title('LQR Sensitivities');
 
 %% Filtro de Kalman (Observador)
-Q_kf = diag([ 1   1   100   100  1]);
+            % x  x_dot  phi  phi_dot  int
+Q_kf = diag([ 1    1    100     1     50]);
 R_kf = 1;
 L = (dlqr(Aa',Ca',Q_kf,R_kf))' % metodo LQR
 
-% Analise de estabilidade relativa via margens de ganho e de fase (TODO: validacao pendente)
-% Cz_kf = ss(Aa - L*Ca, L, -K, 0, Ts);
-% LoopGain_kf = sys_ss_d_a * Cz_kf;
-% 
-% Tsen = feedback(LoopGain_kf, eye(size(LoopGain_kf.C,1)));
-% Ssen = feedback(eye(size(LoopGain_kf.C,1)), LoopGain_kf);
-% 
-% mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
-% 
-% GmdB_kf = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) )
-% Pmdeg_kf = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) )
+%% Analise da resposta em frequencia do Filtro de Kalman
+% clear Tsen Ssen mt ms GmdB Pmdeg
+Tsen = ss(Aa-L*Ca,L,Ca,Da,Ts);
+Ssen = eye(1,1)-Tsen;
+
+mt = max( sigma(Tsen) );
+ms = max( sigma(Ssen) );
+
+GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+disp('Análise do Filtro de Kalman');
+disp('Margens de ganho e fase obtidas por análise de malha fechada:');
+disp('GmdB = '); disp(GmdB);
+disp('Pmdeg = '); disp(Pmdeg);
+
+figure; sigma(Tsen); hold; sigma(Ssen); grid;
+legend('|Tsen|','|Ssen|'); title('Kalman Filter Sensitivities');
 
 %% Compensador dinâmico completo LQG
 
@@ -147,7 +161,7 @@ for k = 2:N
 end
 
 % Calculo da Função Custo (TODO: validacao pendente)
-J = sum(x(3,:).^2 + u.^2)
+% J = sum(x(3,:).^2 + u.^2)
 
 %% Plots
 % Comparação entre referência, saída real e estimada
@@ -165,20 +179,3 @@ subplot(2,1,2)
     ylabel('u(t) [N]');
     xlabel('Tempo [s]');
     title('Sinal de controle');
-
-% Estados estimados vs reais
-% figure;
-% subplot(4,1,1)
-%     plot(t, x(1,:), 'b'); hold on; plot(t, x1e, 'r:'); ylabel('x');
-% subplot(4,1,2)
-%     plot(t, x(2,:), 'b'); hold on; plot(t, x2e, 'r:'); ylabel('x_{dot}');
-% subplot(4,1,3)
-%     plot(t, x(3,:), 'b'); hold on; plot(t, x3e, 'r:'); ylabel('\phi');
-% subplot(4,1,4)
-%     plot(t, x(4,:), 'b'); hold on; plot(t, x4e, 'r:'); ylabel('\phi_{dot}');
-% xlabel('Tempo [s]');
-% sgtitle('Estados reais vs. estimados');
-% legend('Real', 'Estimado');
-
-
-
