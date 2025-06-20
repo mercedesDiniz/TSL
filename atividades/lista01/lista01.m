@@ -3,7 +3,7 @@ clear all; close all; clc;
 
 %% 1) Calcule os determinantes das matrizes:
 disp("QUESTÃO 1");
-clear M1 M2 M3 M5
+clear all; 
 M1 = [1 3 0; -1 2 1; 1 -1 1] 
 disp("det(M1) = "); det(M1)
 
@@ -18,7 +18,7 @@ disp("det(M5) = "); det(M5)
 
 %% 2) Quando possível, calcule as inversas das seguintes matrizes:
 disp("QUESTÃO 2");
-clear A B C D E
+clear all;
 A = [1 2; 3 1]
 disp("inv(A) = "); inv(A)
 
@@ -28,10 +28,9 @@ disp("inv(B) = "); inv(B)
 C = [-1 3 2; -1 2 1; 2 -6 -4]
 disp("inv(C) = Não Existe. "); inv(C) 
 
-%% 8)
-%  Calcule os autovalores das seguintes matrizes:
+%% 8) Calcule os autovalores das seguintes matrizes:
 disp("QUESTÃO 8");
-clear A B C D
+clear all; 
 
 A = [1 2; 0 4]
 disp("eig(A) = "); eig(A)
@@ -45,10 +44,9 @@ disp("eig(C) = "); eig(C)
 D = [1 0; 1 4]
 disp("eig(D) = "); eig(D)
 
-%%  9)
-% Trace os Diagramas de Bode dos seguintes sistemas:
+%%  9) Trace os Diagramas de Bode dos seguintes sistemas:
 disp("QUESTÃO 9");
-clear G_a G_b G_c G_d G_e G_f
+clear all; 
 
 % Letra (a)
 G_a = tf(1, 1);
@@ -90,13 +88,59 @@ bode(G_e); grid on; title('G_e(s) = 5(1+0.01s)^2 / [s(1+0.0001s)^2]');
 subplot(3,2,6);
 bode(G_f); grid on; title('G_f(s) = 4/(s+5)^2');
 
+%% 13)
+% Elabore um exemplo com um processo sub-amortecido de segunda ordem 
+% ligado à uma malha de controle PI. Usando este exemplo, avalie as margens
+% de Ganho e de Fase pelo método de Bode (em malha aberta) e compare com a
+% avaliação a partir das margens obtidas via funções de sensibilidade 
+% (análise em malha fechada).
+
+disp("QUESTÃO 13");
+clear all; 
+
+% 1. Planta subamortecida de 2ª ordem
+wn = 4;        % frequência natural
+zeta = 0.3;    % fator de amortecimento
+G = tf(wn^2, [1 2*zeta*wn wn^2]);
+
+% 2. Controlador PI
+Kp = 1.2; Ki = 1.5;
+C = tf([Kp Ki], [1 0]);  % C(s) = (Kp*s + Ki)/s
+
+% 3. Análise em malha aberta (C(s)*G(s))
+L = C * G;  % Malha aberta
+
+figure;
+margin(L); grid on;
+title('Diagrama de Bode - Análise em Malha Aberta');
+
+% 4. Malha fechada com realimentação negativa unária
+Tsen = feedback(L, 1);      % Função de co-sensibilidade T(s)
+Ssen = 1 - Tsen;            % Função de sensibilidade S(s)
+
+mt = max( sigma(Tsen) );
+ms = max( sigma(Ssen) );
+
+GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+disp('--- Análise com funções de sensibilidade ---');
+disp(['Ganho máximo |Tsen| (mt): ', num2str(mt)]);
+disp(['Ganho máximo |Ssen| (ms): ', num2str(ms)]);
+disp(['Margem de ganho estimada (dB): ', num2str(GmdB)]);
+disp(['Margem de fase estimada (graus): ', num2str(Pmdeg)]);
+
+figure; sigma(Tsen); hold; sigma(Ssen); grid;
+legend('|Tsen|','|Ssen|'); title('Funções de sensibilidade - Análise em Malha Fechada');
+
 %% 17)
 % Para o sistema mostrado a seguir, utilizando a fórmula de Ackermann, 
 % projete um observador de estados tal que os pólos do sistema observador 
 % sejam o dobro dos pólos de malha aberta da planta. 
 % Apresente, como resultado, o ganho L do observador.
+
 disp("QUESTÃO 17");
-clear A B C D L
+clear all;
 
 % Matrizes
 A = [1 2; -3 -4];
@@ -119,7 +163,7 @@ L = acker(A', C', p_observer)'
 % observável. Por fim, (iv) obtenha a função detransferência que descreve 
 % a sua relação de entrada e saída.
 disp("QUESTÃO 19");
-clear A B C D L Co Ob
+clear all;
 
 % Matrizes
 A = [20 -200; 0 0];
@@ -163,7 +207,7 @@ G = C * inv(s * eye(size(A)) - A) * B + D
 % a sua relação de entrada e saída.
 
 disp("QUESTÃO 21");
-clear A B C D s Co Ob G
+clear all;
 
 % Matrizes
 A = [3 -2 0; 1 0 0; 0 1 0];
