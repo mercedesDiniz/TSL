@@ -133,6 +133,46 @@ disp(['Margem de fase estimada (graus): ', num2str(Pmdeg)]);
 figure; sigma(Tsen); hold; sigma(Ssen); grid;
 legend('|Tsen|','|Ssen|'); title('Funções de sensibilidade - Análise em Malha Fechada');
 
+%% 14)
+% Utilizando o mesmo exemplo elaborado na Questão 13, obtenha uma
+% realização controlável em espaço de estados para este sistema e projete 
+% um regulador por realimentaçãode estados tal que os polos de malha 
+% fechada sejam puramente reais. 
+% Após, mostre como é possível verificar o Diagrama de Bode da malha direta
+% utilizando as matrizes do sistema emespaço de estados e o ganho do regulador.
+
+disp("QUESTÃO 14");
+
+% 1. Realização controlável
+A = [0 1; -wn^2 -2*zeta*wn];
+B = [0; 1];
+C = [wn^2 0];
+D = 0;
+
+sys = ss(A,B,C,D)
+
+% 2. Projeto de realimentação de estados
+% Desejamos polos puramente reais
+p_des = [-4 -6];  % exemplo
+
+K = place(A, B, p_des)
+
+% Sistema em malha fechada com realimentação de estados (A - B*K)
+Acl = A - B*K;
+
+% Verificar estabilidade
+disp('Polos de malha fechada com realimentação de estados:');
+disp(eig(Acl));
+
+% 3. Malha direta L(s) = K*(sI - A)^(-1)*B (sem realimentação unária)
+[num, den] = ss2tf(A, B, K, 0);
+
+L = tf(num, den)
+
+% 4. Diagrama de Bode da malha direta
+figure; margin(L); grid on;
+title('Diagrama de Bode da malha direta K*(sI - A)^(-1)*B');
+
 %% 17)
 % Para o sistema mostrado a seguir, utilizando a fórmula de Ackermann, 
 % projete um observador de estados tal que os pólos do sistema observador 
