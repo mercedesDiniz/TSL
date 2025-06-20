@@ -173,6 +173,54 @@ L = tf(num, den)
 figure; margin(L); grid on;
 title('Diagrama de Bode da malha direta K*(sI - A)^(-1)*B');
 
+%% 15)
+% Para o mesmo sistema usado nas questões anteriores, projete um observador
+% de estados tal que os autovalores de malha fechada deste observador sejam
+% duas vezes mais velozes que os autovalores de malha aberta. Após, desenvolva
+% as equações que permitem avaliar o Diagrama de Bode de malha direta do observador,
+% considerando a transferência da saída medida para a saída estimada. Também,
+% desenvolva as equações de malha fechada do observador que permitem realizar
+% testes de convergência deste observador, usando a transferência da saída medida
+% para a saída estimada. Faça um teste de resposta ao degrau deste observador e
+% verifique se ele opera duas vezes mais rápido que o sistema (a planta) em malha aberta.
+
+disp("QUESTÃO 15");
+
+% Polos desejados para o observador (2x mais rápidos)
+poles_obs = 2 * eig(A);
+
+% Ganho do observador L
+L = place(A', C', poles_obs)'
+
+% 1. Malha direta do observador: G_hat(s) = C*(sI - A + LC)^(-1)*L
+[num_obs, den_obs] = ss2tf(A - L*C, L, C, 0);
+G_hat = tf(num_obs, den_obs);
+
+% 2. Malha fechada do observador (erro de estimação)
+% e = y - y_hat, então E(s)/Y(s) = I - G_hat
+H_e = tf(1,1) - G_hat;
+
+% 3. Diagrama de Bode
+figure; margin(G_hat); grid on;
+title('Diagrama de Bode: y(t) -> y^(t)');
+
+% 4. Teste de convergência (resposta ao degrau de erro de estimação)
+% Entrada degrau: y(t) = 1 -> simular erro de estimação
+figure; step(H_e); grid on;
+title('Resposta ao Degrau: Erro de estimação e(t)');
+
+% 5. Comparar resposta ao degrau da planta vs. do observador
+sys_planta = ss(A,B,C,D);
+[y_real,t] = step(sys_planta);
+[y_est,t2] = step(G_hat);
+
+figure;
+plot(t, y_real, 'b', t2, y_est, 'r--'); grid on;
+legend('Saída real', 'Estimada');
+title('Comparação da Resposta ao Degrau: Planta vs Observador');
+xlabel('Tempo (s)');
+ylabel('Saída');
+
 %% 17)
 % Para o sistema mostrado a seguir, utilizando a fórmula de Ackermann, 
 % projete um observador de estados tal que os pólos do sistema observador 
