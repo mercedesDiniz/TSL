@@ -21,48 +21,51 @@ B = [   0;
         0; 
       m*l/p];
 
-C = [0 0 1 0]; % só mede phi
+C = [1 0 0 0;   % sensor p/ x - posição do carro
+     0 0 1 0];  % sensor p/ phi - angulo do pendulo
      
-D = 0;
+D = [0;
+     0];
 
 sys_ss_c = ss(A,B,C,D, ...
     'statename', {'x' 'x_dot' 'phi' 'phi_dot'}, ...
     'inputname',{'u'}, ...
-    'outputname', {'phi'})
+    'outputname', {'x','phi'})
 
 % Modelo de Espaço de Estado Discreto
 Ts = 0.01; % s
 sys_ss_d = c2d(sys_ss_c, Ts)
 [Ad, Bd, Cd, Dd] = ssdata(sys_ss_d);
 
-% Modelo Aumentando de Espaço de Estado Discreto
-% Adicionar o integrador
-Aa = [1,            Cd*Ad;
-      zeros(4,1),   Ad];  
+% Modelo Aumentando de Espaço de Estado Discreto (adicionar o integrador)
+% Integração do erro da variável "phi" (2ª linha de Cd)
+Cy_phi = Cd(2,:);  % saida associada a phi
 
-Ba = [Cd*Bd;
-       Bd];
+Aa = [1      -Cy_phi*Ad;
+      zeros(size(Ad,1),1)  Ad];
 
-Ca = [Cd, 0];
+Ba = [-Cy_phi*Bd;
+           Bd];
 
+Ca = [zeros(2,1) Cd];  
 Da = Dd;
 
 sys_ss_d_a = ss(Aa, Ba, Ca, Da, Ts,  ...
     'statename', {'x' 'x_dot' 'phi' 'phi_dot' 'int'}, ...
     'inputname',{'u'}, ...
-    'outputname', {'phi'})
+    'outputname', {'x','phi'})
 
 
 % Verificação de controlabilidade e observabilidade
-Co = ctrb(Ad, Bd); Ob = obsv(Ad, Cd);
+Co = ctrb(Aa, Ba); Ob = obsv(Aa, Ca);
 
-if rank(Co) == size(Ad,1)
+if rank(Co) == size(Aa,1)
     disp("Sistema Controlável");
 else
     warning("Sistema NÃO é Controlável");
 end
 
-if rank(Ob) == size(Ad,1)
+if rank(Ob) == size(Aa,1)
     disp("Sistema Observável");
 else
     warning("Sistema NÃO é Observável");
