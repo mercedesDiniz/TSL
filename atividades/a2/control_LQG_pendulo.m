@@ -232,8 +232,8 @@ t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
 
 for k = 2:N
     % Modelo em espaço de estados
-    x(:,:, k) = A*x(:,:, k-1) + B*u(k-1) + [1; 0; 0; 0]*w2(k-1); 
-    y(:,:, k) = C*x(:,:, k) + v1(k) + v2(k);
+    x(:,:, k) = Ad*x(:,:, k-1) + Bd*u(k-1) + [1; 0; 0; 0]*w2(k-1); 
+    y(:,:, k) = Cd*x(:,:, k) + v1(k) + v2(k);
 
     % Modelo em espaço de estados aumentado com o filtro de Kalman
     xa(:,:, k) = Aa*xa(:,:, k-1) + Ba*du(k-1) + L*(y(:,:, k-1) - ya(:,:, k-1));
