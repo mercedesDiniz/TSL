@@ -3,14 +3,19 @@ clear all; close all; clc;
 
 %% Planta do pêndulo invertido 
 % Ref.: https://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling 
-% A variável sensorialmente medida é a posição angular do pêndulo (phi)
+% A variável sensorialmente medida é a posição angular do pêndulo (em rad).
+% Sinal de controle (u) é a Força aplicada sobre o carro (F) em Newtons.
+% As variaveis de estado são:
+    % x1 = x:       posição do carro em metros
+    % x2 = x_dot:   velocidade do carro em m/s
+    % x3 = phi:     angulo do pendulo (em rad)
+    % x4 = phi_dot  velocidade angular do pendulo (rad/s)
 
-% Parametros do sistema
-M = 0.5; m = 0.2; b = 0.1; I = 0.006; g = 9.8; l = 0.3;   
-
-% Modelo em Espaço de Estados Contínuo
+%% Modelo em Espaço de Estados em Tempo Continuo
+M = 0.5; m = 0.2; b = 0.1; I = 0.006; g = 9.8; l = 0.3; 
 p = I*(M+m)+M*m*l^2; 
 
+% Matrizes de estado
 A = [0      1              0           0;
      0 -(I+m*l^2)*b/p  (m^2*g*l^2)/p   0;
      0      0              0           1;
@@ -21,64 +26,129 @@ B = [   0;
         0; 
       m*l/p];
 
-C = [1 0 0 0;   % sensor p/ x - posição do carro
-     0 0 1 0];  % sensor p/ phi - angulo do pendulo
-     
-D = [0;
-     0];
+C = [0 0 1 0]; ny = size(C,1); % sersor da posição angular do pêndulo
+% C = [0 0 1 0; 0 0 1 0]; ny = size(C,1); % + sensor de posição do carro
 
+D = zeros(ny,1);
+    
 sys_ss_c = ss(A,B,C,D, ...
     'statename', {'x' 'x_dot' 'phi' 'phi_dot'}, ...
     'inputname',{'u'}, ...
-    'outputname', {'x','phi'})
+    'outputname', {'phi'})
 
-% Modelo de Espaço de Estado Discreto
-Ts = 0.01; % s
+% Analise dos poles e autovalores do sistema
+disp('Autovalores contínuos do sistema:');
+disp(eig(A)); % o polo 5.5651 é instavel (está no semiplano direito do plano s)
+
+% Plot dos polos no plano S
+figure; rlocus(sys_ss_c);
+title('Disposição dos polos do modelo contínuo'); grid on; hold on;
+theta = linspace(0, 2*pi, 100);
+plot(cos(theta), sin(theta), '--', 'Color', [0.5 0.5 0.5]);
+axis equal;
+legend('Lugar da raiz', 'Círculo Unitário');
+
+% Analise das maximas frequencias do sistema
+disp('Verificando a frequência máxima do sistema:');
+damp(sys_ss_c) 
+f_max = max(damp(sys_ss_c));
+disp(['> f_max = ' num2str(f_max) ' rad/s']);
+
+%% Modelo em Espaço de Estado em Tempo Discreto 
+v_factor = 200;                  % fator de velocidade da amostragem  
+fs = (f_max*v_factor)/(2*pi);    % frequencia de amostragem (Hz) 
+Ts = 1/fs;                       % periodo de amostragem (s) 
+Ts = fix(v_factor*Ts)/v_factor; 
+
+disp(['Período de Amostragem Ts = ' num2str(Ts) 's']);
+
+% Discretizando o sistema
 sys_ss_d = c2d(sys_ss_c, Ts)
 [Ad, Bd, Cd, Dd] = ssdata(sys_ss_d);
 
-% Modelo Aumentando de Espaço de Estado Discreto (adicionar o integrador)
-% Integração do erro da variável "phi" (2ª linha de Cd)
-Cy_phi = Cd(2,:);  % saida associada a phi
+% Compara o modelo contínuo com o discreto 
+% Observa-se que os modelos divergem nas altas frequências.
+% O sistema é instavel, pq na região de inversão de fase há o aumento do ganho.
+figure; bode(sys_ss_c, sys_ss_d); title('Digrama de bode do modelo cont. e disc.');
+legend('Contínuo', 'Discreto', 'Location','southwest');
 
-Aa = [1      -Cy_phi*Ad;
-      zeros(size(Ad,1),1)  Ad];
+%% Modelo Aumentando em Espaço de Estado Discreto (adicionar o integrador)
+Aa = [eye(ny, ny)   Cd*Ad;
+      zeros(4, ny)  Ad];
 
-Ba = [-Cy_phi*Bd;
-           Bd];
+Ba = [Cd*Bd;
+       Bd];
 
-Ca = [zeros(2,1) Cd];  
+Ca = [eye(ny, ny) zeros(ny, 4)];  
+
 Da = Dd;
 
 sys_ss_d_a = ss(Aa, Ba, Ca, Da, Ts,  ...
     'statename', {'x' 'x_dot' 'phi' 'phi_dot' 'int'}, ...
     'inputname',{'u'}, ...
-    'outputname', {'x','phi'})
+    'outputname', {'phi'})
 
+figure; bode(sys_ss_d_a); grid; title('Digrama de bode do modelo aumentado');
 
-% Verificação de controlabilidade e observabilidade
-Co = ctrb(Aa, Ba); Ob = obsv(Aa, Ca);
+% Analise dos poles e autovalores do sistema
+disp('Autovalores discretos do sistema aumentado:');
+disp(eig(Aa)); % o polo 1.0282 é instavel (está fora do circulo únitario no plano z)
+               % aparentemente a variavel na posição pendulo já é uma
+               % variavel integradora (a mesma se acumula ao longo do tempo)
 
-if rank(Co) == size(Aa,1)
-    disp("Sistema Controlável");
+%% Testes de Controlabilidade e Observabilidade
+n = length(Aa);     % Número de variaveis de estado (o integrador é considerado)
+Co = ctrb(Aa, Ba);  % Matriz de Controlabilidade
+Ob = obsv(Aa, Ca);  % Matriz de Observabilidade
+
+disp('Verificação da Controlabilidade:');
+disp(['> rank(Co) = ' num2str(rank(Co))]);
+if rank(Co) == n
+    disp(['== ' num2str(n) ' - O sistema é controlável' ]);
 else
-    warning("Sistema NÃO é Controlável");
+    disp(['!= ' num2str(n) ' - O sistema não é controlável' ]);
 end
 
-if rank(Ob) == size(Aa,1)
-    disp("Sistema Observável");
+disp('Verificação da Observabilidade:');
+disp(['> rank(Ob) = ' num2str(rank(Ob))]);
+if rank(Ob) == n
+    disp(['== ' num2str(n) ' - O sistema é observável' ]);
 else
-    warning("Sistema NÃO é Observável");
+    disp(['!= ' num2str(n) ' - O sistema não é observável' ]);
 end
 
-%% Controlador LQR
-             % x  x_dot  phi  phi_dot  int     % inclui o integrador
-Q_lqr = diag([ 1    1    10    1     1]);      % peso das variaveis de estados
-R_lqr = 1;                                     % peso do esforço de controle
+%% Controlador LQR 
+             % y1  x  x_dot  phi  phi_dot  
+Q_lqr = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
+R_lqr = 1;                                  % peso do esforço de controle
 
-K = dlqr(Aa, Ba, Q_lqr, R_lqr)
+disp('Verificação da Detectabilidade (p/ o LQR):');
+Ob_dec_lqr = obsv(Aa', sqrt(Q_lqr)');
+disp(['> rank(obsv(Aa^(T), sqrt(Q_lqr)^(T))) = ' num2str(rank(Ob_dec_lqr))]);
 
-% %% Analise da resposta em frequencia do LQR
+if rank(Ob_dec_lqr) == n
+    disp(['== ' num2str(n) ' - O sistema é detectável' ]);
+else
+    disp(['!= ' num2str(n) ' - O sistema não é detectável' ]);
+end
+
+%% Filtro de Kalman (Observador)
+             % y1  x  x_dot  phi  phi_dot  
+Q_kf = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
+R_kf = 1;                                  % ruído da medição
+
+disp('Verificação da Detectabilidade (p/ o Filtro de Kalman):');
+Ob_dec_kf = obsv(Aa', sqrt(Q_kf)');
+disp(['> rank(obsv(Aa^(T), sqrt(Q_kf)^(T))) = ' num2str(rank(Ob_dec_kf))]);
+
+if rank(Ob_dec_kf) == n
+    disp(['== ' num2str(n) ' - O sistema é detectável' ]);
+else
+    disp(['!= ' num2str(n) ' - O sistema não é detectável' ]);
+end
+
+
+%% Analise da resposta em frequencia do LQR
 % Tsen = ss(Aa-Ba*K,Ba*K(1),Ca,Da,Ts); % TODO: K(3) ou K(1)?
 % Ssen = eye(1,1)-Tsen; 
 % 
@@ -95,12 +165,6 @@ K = dlqr(Aa, Ba, Q_lqr, R_lqr)
 % 
 % figure; sigma(Tsen); hold; sigma(Ssen); grid;
 % legend('|Tsen|','|Ssen|'); title('LQR Sensitivities');
-
-%% Filtro de Kalman (Observador)
-            % x  x_dot  phi  phi_dot  % estimando apenas os estados físicos
-Q_kf = diag([ 1    1    10     1 ]);  % pesos das variaveis de estados
-R_kf = 1;                             % ruído da medição  
-L = (dlqr(Ad',Cd',Q_kf,R_kf))'        % ganho do observador 
 
 % %% Analise da resposta em frequencia do Filtro de Kalman
 % % clear Tsen Ssen mt ms GmdB Pmdeg
