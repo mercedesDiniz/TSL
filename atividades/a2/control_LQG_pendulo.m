@@ -222,7 +222,7 @@ t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
     u(1) = 0;                                % sinal de controle
 
     % Condições iniciais do modelo aumentado
-                % x  x_dot  phi  phi_dot  int
+                % y1  x  x_dot  phi  phi_dot
     xa(:,:, 1) = [0;  0;    0;     0;     0];   % entrada
     ya(:,:, 1) = Ca*xa(:,:, 1);                 % saida
     du(1) = 0;                                  % sinal de controle
@@ -248,7 +248,6 @@ for k = 2:N
     % Lei de controle de realimentação de estados
     du(k) = K*([r1(k); 0; 0; 0; 0] - xa(:,:, k));
 
-
     % Passando du(k) pelo integrador discreto   
     u(k) = u(k-1) + du(k);
 end
@@ -261,18 +260,22 @@ subplot(211)
     legend('r1(t)', 'y1(t)', 'y1a(t): estimado');
     ylabel('Angulo (rad)');
 subplot(212)
-    plot(t, u, 'b'); xlabel('Temo (s)'); ylabel('Força (N)');
-    
+    plot(t, u, 'b'); xlabel('Tempo (s)'); ylabel('Força (N)');
+
 figure;
-subplot(311)
+subplot(411)
     plot(t,xa(1,:),'r');
     ylabel('xa_1(t)');
     title('Variáveis ​​de estado do estimador aumentado');
 
-subplot(312)
+subplot(412)
     plot(t,xa(2,:),'r');
     ylabel('xa_2(t)');
 
-subplot(313)
+subplot(413)
     plot(t,xa(3,:),'r');
     ylabel('xa_3(t)');
+
+subplot(414)
+    plot(t,xa(4,:),'r');
+    ylabel('xa_4(t)');
