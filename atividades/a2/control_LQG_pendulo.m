@@ -117,7 +117,8 @@ else
     disp(['!= ' num2str(n) ' - O sistema não é observável' ]);
 end
 
-%% Controlador LQR 
+%% Controlador LQR
+disp('Controlador LQR');
              % y1  x  x_dot  phi  phi_dot  
 Q_lqr = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
 R_lqr = 1;                                  % peso do esforço de controle
@@ -148,7 +149,25 @@ disp('LQG K = '); disp(K);
 disp('Autovalores do controlador LQR:');
 disp(eig(Aa-Ba*K)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
 
+% TODO: Analise em MF pelas função de sensibilidade
+% Tsen = ss(Aa-Ba*K,Ba*K(4),Ca,Da,Ts);
+% Ssen = eye(ny,ny)-Tsen; 
+% 
+% mt = max( sigma(Tsen) );
+% ms = max( sigma(Ssen) );
+% 
+% GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+% Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+% 
+% disp('Margens de ganho e fase obtidas por análise de malha fechada:');
+% disp('GmdB = '); disp(GmdB);
+% disp('Pmdeg = '); disp(Pmdeg);
+% 
+% figure; sigma(Tsen); hold; sigma(Ssen); grid;
+% legend('|Tsen|','|Ssen|'); title('LQR Sensibilidades');
+
 %% Filtro de Kalman (Observador)
+disp('Filtro de Kalman');
              % y1  x  x_dot  phi  phi_dot  
 Q_kf = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
 R_kf = 1;                                  % ruído da medição
@@ -179,111 +198,81 @@ disp('KF L = '); disp(L);
 disp('Autovalores do filtros de Kalman:');
 disp(eig(Aa-L*Ca)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
 
-%% Analise da resposta em frequencia do LQR
-% Tsen = ss(Aa-Ba*K,Ba*K(1),Ca,Da,Ts); % TODO: K(3) ou K(1)?
-% Ssen = eye(1,1)-Tsen; 
-% 
-% mt = max( sigma(Tsen) );
-% ms = max( sigma(Ssen) );
-% 
-% GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
-% Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
-% 
-% disp('Análise LQG');
-% disp('Margens de ganho e fase obtidas por análise de malha fechada:');
-% disp('GmdB = '); disp(GmdB);
-% disp('Pmdeg = '); disp(Pmdeg);
-% 
-% figure; sigma(Tsen); hold; sigma(Ssen); grid;
-% legend('|Tsen|','|Ssen|'); title('LQR Sensitivities');
+% TODO: Analise em MF pelas função de sensibilidade
 
-% %% Analise da resposta em frequencia do Filtro de Kalman
-% % clear Tsen Ssen mt ms GmdB Pmdeg
-% Tsen = ss(Aa-L*Ca,L,Ca,Da,Ts);
-% Ssen = eye(1,1)-Tsen;
-% 
-% mt = max( sigma(Tsen) );
-% ms = max( sigma(Ssen) );
-% 
-% GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
-% Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
-% 
-% disp('Análise do Filtro de Kalman');
-% disp('Margens de ganho e fase obtidas por análise de malha fechada:');
-% disp('GmdB = '); disp(GmdB);
-% disp('Pmdeg = '); disp(Pmdeg);
-% 
-% figure; sigma(Tsen); hold; sigma(Ssen); grid;
-% legend('|Tsen|','|Ssen|'); title('Kalman Filter Sensitivities');
-% 
-% %% Compensador dinâmico completo LQG
-% 
-% % Configurações da simulação
-% tfinal = 10;                % tempo de simulação (s)
-% N = round(tfinal/Ts);       % numero de amostras
-% t = 0:Ts:N*Ts-Ts;           
-% 
-% % Condições iniciais
-% x(:,1) = [0.1; 0; 0.1; 0];   % posição, velocidade, angulo, velocidade angular
-% xa(:,1) = [0; 0; 0; 0; 0];   % integrador + estados estimados
-% 
-% y(1) = C*x(:,1);             % saida medida inicial
-% ya(1) = Ca*xa(:,1);          % saida estimada inicial
-% 
-% x1e(1) = xa(2,1); 
-% x2e(1) = xa(3,1);
-% x3e(1) = xa(4,1);
-% x4e(1) = xa(5,1);
-% 
-% % Disturbios na entrada e saida
-% w = 1*wgn(1,N, 1e-3, 'linear');
-% % w2(1:round(N/2))=0; w2(round(N/2)+1:N)=+0.02; 
-% v = 1*wgn(1,N, 1e-3, 'linear'); 
-% v2(1:round(N/2))=0; v2(round(N/2)+1:N)=+0.2*0;
-% 
-% ref(1:round(N/6))= 0; ref(round(N/6):N)=1;   % referencia 
-% u = zeros(1, N);    % controle aplicado
-% du = zeros(1, N);  
-% 
-% % Simulação
-% for k = 2:N
-%     % Sistema real
-%     x(:,k) = Ad*x(:,k-1) + Bd*u(k-1) + [1;0;0;0]*w(k); 
-%     y(k) = C*x(:,k) + v(k) +v2(k);                        
-%     
-%     % Estimador de estados (Filtro de Kalman)
-%     xa(:,k) = Aa*xa(:,k-1) + Ba*du(k-1) + L*( y(k-1) - ya(k-1) );
-%     ya(k) = Ca*xa(:,k);
-% 
-%     % Controle LQR com ação integrativa
-%     du(k) = K * ( [ref(N); zeros(4,1)] - xa(:,k) ); % controle com integrador
-%     
-%     % Atualiza controle total aplicando integrador na entrada
-%     u(k) = u(k-1) + du(k);
-% 
-%     % Estados estimados individualmente
-% %     x1e(k) = xa(2,k);
-% %     x2e(k) = xa(3,k);
-% %     x3e(k) = xa(4,k);
-% %     x4e(k) = xa(5,k);
-% end
-% 
-% % Calculo da Função Custo (TODO: validacao pendente)
-% % J = sum(x(3,:).^2 + u.^2)
-% 
-% %% Plots
-% % Comparação entre referência, saída real e estimada
-% figure;
-% subplot(2,1,1)
-%     plot(t, ref, 'k--'); hold on;
-%     plot(t, y, 'b'); 
-%     plot(t, ya, 'r:');
-%     legend('Ref', '\phi (real)', '\phi (estimada)');
-%     ylabel('\phi (rad)');
-%     title('Seguimento de referência e estimativa');
-% 
-% subplot(2,1,2)
-%     plot(t, u, 'm');
-%     ylabel('u(t) [N]');
-%     xlabel('Tempo [s]');
-%     title('Sinal de controle');
+%% Simulação do controlador LQG
+t_f = 20;           % temos de simulação
+N = round(t_f/Ts);  % número de amostras
+t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
+    
+    % Sinal de referencia
+    r1(1:5) = 0; r1(6:N) = 0;
+
+    % Disturbios na entrada e saida
+    w1 = 0*wgn(1, N, 1e-3, 'linear'); % ruido
+    w2(1:round(N/2)) = 0; w2(round(N/2)+1:N) = 0*0.02;
+
+    v1 = 0*wgn(1, N, 1e-3, 'linear'); % ruido
+    v2(1:round(N/2)) = 0; v2(round(N/2)+1:N) =+0.2*0;
+
+    % Condições iniciais do modelo nominal
+                % x  x_dot    phi    phi_dot
+    x(:,:, 1) = [0;  0;    0.0349;     0];   % entrada
+    y(:,:, 1) = C*x(:,:, 1);                 % saida
+    u(1) = 0;                                % sinal de controle
+
+    % Condições iniciais do modelo aumentado
+                % x  x_dot  phi  phi_dot  int
+    xa(:,:, 1) = [0;  0;    0;     0;     0];   % entrada
+    ya(:,:, 1) = Ca*xa(:,:, 1);                 % saida
+    du(1) = 0;                                  % sinal de controle
+
+    % Condições iniciais das variaveis estimadas
+    x1e(1)= 0; x2e(1)= 0; x3e(1)= 0; x4e(1)= 0;
+
+for k = 2:N
+    % Modelo em espaço de estados
+    x(:,:, k) = A*x(:,:, k-1) + B*u(k-1) + [1; 0; 0; 0]*w2(k-1); 
+    y(:,:, k) = C*x(:,:, k) + v1(k) + v2(k);
+
+    % Modelo em espaço de estados aumentado com o filtro de Kalman
+    xa(:,:, k) = Aa*xa(:,:, k-1) + Ba*du(k-1) + L*(y(:,:, k-1) - ya(:,:, k-1));
+    ya(:,:, k) = Ca*xa(:,:, k);
+
+    % Estimação das variaveis
+    x1e(k) = x1e(k-1) + xa(2, k);
+    x2e(k) = x2e(k-1) + xa(3, k);
+    x3e(k) = x3e(k-1) + xa(4, k);
+    x4e(k) = x4e(k-1) + xa(5, k);
+
+    % Lei de controle de realimentação de estados
+    du(k) = K*([r1(k); 0; 0; 0; 0] - xa(:,:, k));
+
+
+    % Passando du(k) pelo integrador discreto   
+    u(k) = u(k-1) + du(k);
+end
+
+% Plots
+figure;
+subplot(211)
+    plot(t, r1, 'k'); hold;
+    plot(t, y(1,:),'b'); plot(t, ya(1,:), ':r');
+    legend('r1(t)', 'y1(t)', 'y1a(t): estimado');
+    ylabel('Angulo (rad)');
+subplot(212)
+    plot(t, u, 'b'); xlabel('Temo (s)'); ylabel('Força (N)');
+    
+figure;
+subplot(311)
+    plot(t,xa(1,:),'r');
+    ylabel('xa_1(t)');
+    title('Variáveis ​​de estado do estimador aumentado');
+
+subplot(312)
+    plot(t,xa(2,:),'r');
+    ylabel('xa_2(t)');
+
+subplot(313)
+    plot(t,xa(3,:),'r');
+    ylabel('xa_3(t)');
