@@ -132,6 +132,22 @@ else
     disp(['!= ' num2str(n) ' - O sistema não é detectável' ]);
 end
 
+% Calculo da matriz P pela Equação a Diferenças de Riccati
+P = 1e6*eye(n, n); p_samples = 1000; 
+for i = 1:p_samples
+    P = Aa'*P*Aa -Aa'*P*Ba*inv(Ba'*P*Ba+R_lqr)*Ba'*P*Aa+Q_lqr;
+    traceP(i)=trace(P); 
+end
+figure; plot(traceP); ylabel('Traço de P - LQR'); xlabel('Amostras');
+
+% Calculo do Ganho
+K = ( Aa'*P*Ba*inv(Ba'*P*Ba+R_lqr) )';
+disp('LQG K = '); disp(K);
+
+% Analise dos poles e autovalores do sistema
+disp('Autovalores do controlador LQR:');
+disp(eig(Aa-Ba*K)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
+
 %% Filtro de Kalman (Observador)
              % y1  x  x_dot  phi  phi_dot  
 Q_kf = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
@@ -147,6 +163,21 @@ else
     disp(['!= ' num2str(n) ' - O sistema não é detectável' ]);
 end
 
+% Calculo da matriz P pela Equação a Diferenças de Riccati
+Po = 1e6*eye(n, n); p_samples = 1000; 
+for i = 1:p_samples
+    Po = Aa*Po*Aa' -Aa*Po*Ca'*inv(Ca*Po*Ca'+R_kf)*Ca*Po*Aa'+Q_kf;
+    tracePo(i)=trace(Po); 
+end
+figure; plot(tracePo); ylabel('Traço de P - Filtros de Kalman'); xlabel('Amostras');
+
+% Calculo do Ganho
+L = ( Aa*Po*Ca'*inv(Ca*Po*Ca'+R_kf) );
+disp('KF L = '); disp(L);
+
+% Analise dos poles e autovalores do sistema
+disp('Autovalores do filtros de Kalman:');
+disp(eig(Aa-L*Ca)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
 
 %% Analise da resposta em frequencia do LQR
 % Tsen = ss(Aa-Ba*K,Ba*K(1),Ca,Da,Ts); % TODO: K(3) ou K(1)?
