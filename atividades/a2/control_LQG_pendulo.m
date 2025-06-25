@@ -69,7 +69,7 @@ sys_ss_d = c2d(sys_ss_c, Ts)
 % Compara o modelo contínuo com o discreto 
 % Observa-se que os modelos divergem nas altas frequências.
 % O sistema é instavel, pq na região de inversão de fase há o aumento do ganho.
-figure; bode(sys_ss_c, sys_ss_d); title('Digrama de bode do modelo cont. e disc.');
+figure; bode(sys_ss_c, sys_ss_d); %title('Digrama de bode do modelo cont. e disc.');
 legend('Contínuo', 'Discreto', 'Location','southwest');
 
 %% Modelo Aumentando em Espaço de Estado Discreto (adicionar o integrador)
@@ -119,9 +119,22 @@ end
 
 %% Controlador LQR
 disp('Controlador LQR');
+%Teste 0
              % y1  x  x_dot  phi  phi_dot  
 Q_lqr = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
 R_lqr = 1;                                  % peso do esforço de controle
+
+% Teste1
+% Q_lqr = diag([0.1 0.1 100 0.1 0.5]); % peso alto para phi
+% R_lqr = 1; % controle ainda penalizado normalmente
+ 
+% Teste2
+% Q_lqr = diag([1 1 100 1 1]);
+% R_lqr = 10;
+
+% Teste3
+% Q_lqr = diag([1 10 100 10 1]);
+% R_lqr = 1;
 
 disp('Verificação da Detectabilidade (p/ o LQR):');
 Ob_dec_lqr = obsv(Aa', sqrt(Q_lqr)');
@@ -148,23 +161,6 @@ disp('LQG K = '); disp(K);
 % Analise dos poles e autovalores do sistema
 disp('Autovalores do controlador LQR:');
 disp(eig(Aa-Ba*K)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
-
-% TODO: Analise em MF pelas função de sensibilidade
-% Tsen = ss(Aa-Ba*K,Ba*K(4),Ca,Da,Ts);
-% Ssen = eye(ny,ny)-Tsen; 
-% 
-% mt = max( sigma(Tsen) );
-% ms = max( sigma(Ssen) );
-% 
-% GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
-% Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
-% 
-% disp('Margens de ganho e fase obtidas por análise de malha fechada:');
-% disp('GmdB = '); disp(GmdB);
-% disp('Pmdeg = '); disp(Pmdeg);
-% 
-% figure; sigma(Tsen); hold; sigma(Ssen); grid;
-% legend('|Tsen|','|Ssen|'); title('LQR Sensibilidades');
 
 %% Filtro de Kalman (Observador)
 disp('Filtro de Kalman');
@@ -198,8 +194,6 @@ disp('KF L = '); disp(L);
 disp('Autovalores do filtros de Kalman:');
 disp(eig(Aa-L*Ca)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
 
-% TODO: Analise em MF pelas função de sensibilidade
-
 %% Simulação do controlador LQG
 t_f = 20;           % temos de simulação
 N = round(t_f/Ts);  % número de amostras
@@ -210,9 +204,9 @@ t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
 
     % Disturbios na entrada e saida
     w1 = 0*wgn(1, N, 1e-3, 'linear'); % ruido
-    w2(1:round(N/2)) = 0; w2(round(N/2)+1:N) = 0*0.02;
+    w2(1:round(N/2)) = 0; w2(round(N/2)+1:N) = 1*0.0349; % deformação de ~2 graus sobre o pendulo
 
-    v1 = 0*wgn(1, N, 1e-3, 'linear'); % ruido
+    v1 = 1*wgn(1, N, 1e-5, 'linear'); % ruido no sensor
     v2(1:round(N/2)) = 0; v2(round(N/2)+1:N) =+0.2*0;
 
     % Condições iniciais do modelo nominal
@@ -232,7 +226,7 @@ t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
 
 for k = 2:N
     % Modelo em espaço de estados
-    x(:,:, k) = Ad*x(:,:, k-1) + Bd*u(k-1) + [1; 0; 0; 0]*w2(k-1); 
+    x(:,:, k) = Ad*x(:,:, k-1) + Bd*u(k-1) + [0; 0; 1; 0]*w2(k-1); 
     y(:,:, k) = Cd*x(:,:, k) + v1(k) + v2(k);
 
     % Modelo em espaço de estados aumentado com o filtro de Kalman
@@ -266,7 +260,7 @@ figure;
 subplot(411)
     plot(t,xa(1,:),'r');
     ylabel('xa_1(t)');
-    title('Variáveis ​​de estado do estimador aumentado');
+    %title('Variáveis ​​de estado do estimador aumentado');
 
 subplot(412)
     plot(t,xa(2,:),'r');
@@ -279,3 +273,15 @@ subplot(413)
 subplot(414)
     plot(t,xa(4,:),'r');
     ylabel('xa_4(t)');
+
+ %% Cálculo da Função Custo J (modelo aumentado)
+J = 0;
+for k = 1:N
+    Jx(k) = xa(:,k)' * Q_lqr * xa(:,k);   % custo do estado
+    Ju(k) = u(k)' * R_lqr * u(k);         % custo do controle
+    J = J + Jx(k) + Ju(k);                % custo acumulado
+end
+
+disp('Custo J = '); disp(J);
+
+
