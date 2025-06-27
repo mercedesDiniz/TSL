@@ -3,13 +3,6 @@ clear all; close all; clc;
 
 %% Planta do pêndulo invertido 
 % Ref.: https://ctms.engin.umich.edu/CTMS/index.php?example=InvertedPendulum&section=SystemModeling 
-% A variável sensorialmente medida é a posição angular do pêndulo (em rad).
-% Sinal de controle (u) é a Força aplicada sobre o carro (F) em Newtons.
-% As variaveis de estado são:
-    % x1 = x:       posição do carro em metros
-    % x2 = x_dot:   velocidade do carro em m/s
-    % x3 = phi:     angulo do pendulo (em rad)
-    % x4 = phi_dot  velocidade angular do pendulo (rad/s)
 
 %% Modelo em Espaço de Estados em Tempo Continuo
 M = 0.5; m = 0.2; b = 0.1; I = 0.006; g = 9.8; l = 0.3; 
@@ -27,7 +20,6 @@ B = [   0;
       m*l/p];
 
 C = [0 0 1 0]; ny = size(C,1); % sersor da posição angular do pêndulo
-% C = [0 0 1 0; 0 0 1 0]; ny = size(C,1); % + sensor de posição do carro
 
 D = zeros(ny,1);
     
@@ -36,23 +28,8 @@ sys_ss_c = ss(A,B,C,D, ...
     'inputname',{'u'}, ...
     'outputname', {'phi'})
 
-% Analise dos poles e autovalores do sistema
-disp('Autovalores contínuos do sistema:');
-disp(eig(A)); % o polo 5.5651 é instavel (está no semiplano direito do plano s)
-
-% Plot dos polos no plano S
-% figure; rlocus(sys_ss_c);
-% title('Disposição dos polos do modelo contínuo'); grid on; hold on;
-% theta = linspace(0, 2*pi, 100);
-% plot(cos(theta), sin(theta), '--', 'Color', [0.5 0.5 0.5]);
-% axis equal;
-% legend('Lugar da raiz', 'Círculo Unitário');
-
-% Analise das maximas frequencias do sistema
-disp('Verificando a frequência máxima do sistema:');
-damp(sys_ss_c) 
 f_max = max(damp(sys_ss_c));
-disp(['> f_max = ' num2str(f_max) ' rad/s']);
+
 
 %% Modelo em Espaço de Estado em Tempo Discreto 
 v_factor = 200;                  % fator de velocidade da amostragem  
@@ -60,21 +37,13 @@ fs = (f_max*v_factor)/(2*pi);    % frequencia de amostragem (Hz)
 Ts = 1/fs;                       % periodo de amostragem (s) 
 Ts = fix(v_factor*Ts)/v_factor; 
 
-disp(['Período de Amostragem Ts = ' num2str(Ts) 's']);
-
 % Discretizando o sistema
 sys_ss_d = c2d(sys_ss_c, Ts)
 [Ad, Bd, Cd, Dd] = ssdata(sys_ss_d);
 
-% Compara o modelo contínuo com o discreto 
-% Observa-se que os modelos divergem nas altas frequências.
-% O sistema é instavel, pq na região de inversão de fase há o aumento do ganho.
-% figure; bode(sys_ss_c, sys_ss_d); %title('Digrama de bode do modelo cont. e disc.');
-% legend('Contínuo', 'Discreto', 'Location','southwest');
-
 %% Modelo Aumentando em Espaço de Estado Discreto (adicionar o integrador)
 Aa = [eye(ny, ny)   Cd*Ad;
-      zeros(4, ny)  Ad];
+      zeros(4, ny)  Ad];  n = length(Aa);     % Número de variaveis de estado (o integrador é considerado)
 
 Ba = [Cd*Bd;
        Bd];
@@ -88,36 +57,7 @@ sys_ss_d_a = ss(Aa, Ba, Ca, Da, Ts,  ...
     'inputname',{'u'}, ...
     'outputname', {'phi'})
 
-% figure; bode(sys_ss_d_a); grid; title('Digrama de bode do modelo aumentado');
-
-% Analise dos poles e autovalores do sistema
-disp('Autovalores discretos do sistema aumentado:');
-disp(eig(Aa)); % o polo 1.0282 é instavel (está fora do circulo únitario no plano z)
-               % aparentemente a variavel na posição pendulo já é uma
-               % variavel integradora (a mesma se acumula ao longo do tempo)
-
-%% Testes de Controlabilidade e Observabilidade
-n = length(Aa);     % Número de variaveis de estado (o integrador é considerado)
-Co = ctrb(Aa, Ba);  % Matriz de Controlabilidade
-Ob = obsv(Aa, Ca);  % Matriz de Observabilidade
-
-disp('Verificação da Controlabilidade:');
-disp(['> rank(Co) = ' num2str(rank(Co))]);
-if rank(Co) == n
-    disp(['== ' num2str(n) ' - O sistema é controlável' ]);
-else
-    disp(['!= ' num2str(n) ' - O sistema não é controlável' ]);
-end
-
-disp('Verificação da Observabilidade:');
-disp(['> rank(Ob) = ' num2str(rank(Ob))]);
-if rank(Ob) == n
-    disp(['== ' num2str(n) ' - O sistema é observável' ]);
-else
-    disp(['!= ' num2str(n) ' - O sistema não é observável' ]);
-end
-
-%% Controlador LQR
+%% Controle via realimentação de estado estimado - LQR
 disp('Controlador LQR');
 %Teste 0
              % y1  x  x_dot  phi  phi_dot  
@@ -162,7 +102,7 @@ disp('LQG K = '); disp(K);
 disp('Autovalores do controlador LQR:');
 disp(eig(Aa-Ba*K)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
 
-%% Filtro de Kalman
+%% Estimador de estados - Filtro de Kalman
 disp('Filtro de Kalman');
              % y1  x  x_dot  phi  phi_dot  
 Q_kf = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
@@ -194,7 +134,7 @@ disp('KF L = '); disp(L);
 disp('Autovalores do filtros de Kalman:');
 disp(eig(Aa-L*Ca)); % precisam ser estaveis (está dentro do circulo únitario no plano z)
 
-%% Simulação do controlador LQG
+%% Simulação do Compensador dinâmico completo - LQG
 t_f = 20;           % temos de simulação
 N = round(t_f/Ts);  % número de amostras
 t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
@@ -233,12 +173,6 @@ for k = 2:N
     xa(:,:, k) = Aa*xa(:,:, k-1) + Ba*du(k-1) + L*(y(:,:, k-1) - ya(:,:, k-1));
     ya(:,:, k) = Ca*xa(:,:, k);
 
-    % Estimação das variaveis
-    x1e(k) = x1e(k-1) + xa(2, k);
-    x2e(k) = x2e(k-1) + xa(3, k);
-    x3e(k) = x3e(k-1) + xa(4, k);
-    x4e(k) = x4e(k-1) + xa(5, k);
-
     % Lei de controle de realimentação de estados
     du(k) = K*([r1(k); 0; 0; 0; 0] - xa(:,:, k));
 
@@ -256,44 +190,14 @@ subplot(211)
 subplot(212)
     plot(t, u, 'b'); xlabel('Tempo (s)'); ylabel('Força (N)');
 
-% figure;
-% subplot(411)
-%     plot(t,xa(1,:),'r');
-%     ylabel('xa_1(t)');
-%     %title('Variáveis ​​de estado do estimador aumentado');
-% 
-% subplot(412)
-%     plot(t,xa(2,:),'r');
-%     ylabel('xa_2(t)');
-% 
-% subplot(413)
-%     plot(t,xa(3,:),'r');
-%     ylabel('xa_3(t)');
-% 
-% subplot(414)
-%     plot(t,xa(4,:),'r');
-%     ylabel('xa_4(t)');
-
- %% Cálculo da Função Custo J (modelo aumentado)
-J = 0;
-for k = 1:N
-    Jx(k) = xa(:,k)' * Q_lqr * xa(:,k);   % custo do estado
-    Ju(k) = u(k)' * R_lqr * u(k);         % custo do controle
-    J = J + Jx(k) + Ju(k);                % custo acumulado
-end
-
-disp('Custo J = '); disp(J);
 
 %% Análise da estabilidade relativa - LQR
 disp("Análise da estabilidade relativa - LQR");
-% Método 1 - Análise em MA
+% Método 1 - Análise em MA (recomendado apenas em sist. estáveis)
 clear Tsen Ssen mt ms GmdB Pmdeg
-    % Usado apenas em sist. estáveis, com elevados ganhos nas baixas e
-    % medias freq. e atenuação das altas freq. em MA
-    % Proibido para casos instáveis, gerando análises incorretas como 
-    % ganhos passando abaixo do 0dB. 
 
-% figure; bode(ss(Aa, Ba, K, D)); title('Análise da estabilidade em MA - LQR');
+figure; margin(ss(Aa, Ba, K, Da, Ts)); grid on;
+title('Análise da estabilidade relativa em MA - LQR');
 
 % Método 2 - Análise em MF (via funções de sensibilidade)
 clear Tsen Ssen mt ms GmdB Pmdeg
@@ -319,12 +223,12 @@ legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MF- LQR')
 %% Análise da estabilidade relativa - Filtro de Kalman
 disp("Análise da estabilidade relativa- KF");
 clear Tsen Ssen mt ms GmdB Pmdeg
-% Método 1 - Análise em MA
+% Método 1 - Análise em MA (recomendado apenas em sist. estáveis)
     % x_dot_point = Ax_dot + Bu + Ly
     % y_dot = Cx_dot
-    % Tsem = ss(Aa, L, Ca, Da);
 
-% figure; bode(ss(Aa, L, Ca, Da)); title('Análise da estabilidade em MA - KF');
+figure; margin(ss(Aa, L, Ca, Da,Ts)); grid on;
+title('Análise da estabilidade relativa em MA - KF');
 
 % Método 2 - Análise em MF (via funções de sensibilidade)
     % x_dot_point = Ax_dot + Bu + L(y - y_dot) = (A-CL)x_dot + Bu + Ly
@@ -348,9 +252,22 @@ legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MF- KF');
 
 %% Análise da estabilidade relativa - LQG
 disp("Análise da estabilidade relativa - LQG");
-% Método 1 - Análise em MA
+% Método 1 - Análise em MA (recomendado apenas em sist. estáveis)
 clear Tsen Ssen mt ms GmdB Pmdeg
 
 
 % Método 2 - Análise em MF (via funções de sensibilidade)
 clear Tsen Ssen mt ms GmdB Pmdeg
+    % [x(k+1); x_dot(k+1)] = [A -BK; LC  A-BK-LC]*[x; x_dot] + [Bk1; Bk1]*r1
+    % yc = [C zeros(ny,n)]*[x; x_dot]
+% A_comp = [ Aa    -Ba*K; 
+%           L*Ca   Aa-Ba*K-L*Ca];
+% 
+% B_comp = [x; xa];
+% 
+% C_comp = [Ca zeros(ny, n)];
+% 
+% Tsen = ss(A_comp, B_comp, C_comp, Da, Ts);   % função sensibilidade complementar
+% Ssen = eye(ny,ny) - Tsen;                    % função sensibilidade      
+
+        
