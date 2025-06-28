@@ -253,21 +253,42 @@ legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MF- KF');
 %% Análise da estabilidade relativa - LQG
 disp("Análise da estabilidade relativa - LQG");
 % Método 1 - Análise em MA (recomendado apenas em sist. estáveis)
-clear Tsen Ssen mt ms GmdB Pmdeg
+clear Tsen Ssen mt ms GmdB Pmdeg A_comp B_comp C_comp
+
+A_comp = [ Aa    zeros(n, n); 
+          L*Ca   Aa-L*Ca];
+
+B_comp = [Ba*K(1); Ba*K(1)];
+
+C_comp = [Ca zeros(ny, n)];
+
+Tsen = ss(A_comp, B_comp, C_comp, Da, Ts);   % função sensibilidade complementar
+Ssen = eye(ny,ny) - Tsen;                    % função sensibilidade      
+
+figure; sigma(Tsen); hold; sigma(Ssen); grid;
+legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MA - LQG');
 
 
 % Método 2 - Análise em MF (via funções de sensibilidade)
-clear Tsen Ssen mt ms GmdB Pmdeg
-    % [x(k+1); x_dot(k+1)] = [A -BK; LC  A-BK-LC]*[x; x_dot] + [Bk1; Bk1]*r1
-    % yc = [C zeros(ny,n)]*[x; x_dot]
-% A_comp = [ Aa    -Ba*K; 
-%           L*Ca   Aa-Ba*K-L*Ca];
-% 
-% B_comp = [x; xa];
-% 
-% C_comp = [Ca zeros(ny, n)];
-% 
-% Tsen = ss(A_comp, B_comp, C_comp, Da, Ts);   % função sensibilidade complementar
-% Ssen = eye(ny,ny) - Tsen;                    % função sensibilidade      
+clear Tsen Ssen mt ms GmdB Pmdeg A_comp B_comp C_comp
 
-        
+A_comp = [ Aa    -Ba*K; 
+          L*Ca   Aa-Ba*K-L*Ca];
+
+B_comp = [Ba*K(1); Ba*K(1)];
+
+C_comp = [Ca zeros(ny, n)];
+
+Tsen = ss(A_comp, B_comp, C_comp, Da, Ts);   % função sensibilidade complementar
+Ssen = eye(ny,ny) - Tsen;                    % função sensibilidade      
+
+mt = max( sigma(Tsen) ); ms = max( sigma(Ssen) );
+
+GmdB = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+disp('GmdB = '); disp(GmdB); disp('Pmdeg = '); disp(Pmdeg);
+
+figure; sigma(Tsen); hold; sigma(Ssen); grid;
+legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MF- LQG');
+     
