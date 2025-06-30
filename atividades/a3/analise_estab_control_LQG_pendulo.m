@@ -197,7 +197,7 @@ disp("Análise da estabilidade relativa - LQR");
 clear Tsen Ssen mt ms GmdB Pmdeg
 
 figure; margin(ss(Aa, Ba, K, Da, Ts)); grid on;
-title('Análise da estabilidade relativa em MA - LQR');
+title('Diagrama de Bode em MA - LQR');
 
 % Método 2 - Análise em MF (via funções de sensibilidade)
 clear Tsen Ssen mt ms GmdB Pmdeg
@@ -228,7 +228,7 @@ clear Tsen Ssen mt ms GmdB Pmdeg
     % y_dot = Cx_dot
 
 figure; margin(ss(Aa, L, Ca, Da,Ts)); grid on;
-title('Análise da estabilidade relativa em MA - KF');
+title('Diagrama de Bode em MA - KF');
 
 % Método 2 - Análise em MF (via funções de sensibilidade)
     % x_dot_point = Ax_dot + Bu + L(y - y_dot) = (A-CL)x_dot + Bu + Ly
@@ -262,12 +262,8 @@ B_comp = [Ba*K(1); Ba*K(1)];
 
 C_comp = [Ca zeros(ny, n)];
 
-Tsen = ss(A_comp, B_comp, C_comp, Da, Ts);   % função sensibilidade complementar
-Ssen = eye(ny,ny) - Tsen;                    % função sensibilidade      
-
-figure; sigma(Tsen); hold; sigma(Ssen); grid;
-legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MA - LQG');
-
+figure; margin(ss(A_comp, B_comp, C_comp, Da, Ts)); grid on;
+title('Diagrama de Bode em MA - LQG');
 
 % Método 2 - Análise em MF (via funções de sensibilidade)
 clear Tsen Ssen mt ms GmdB Pmdeg A_comp B_comp C_comp
@@ -290,5 +286,5 @@ Pmdeg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
 disp('GmdB = '); disp(GmdB); disp('Pmdeg = '); disp(Pmdeg);
 
 figure; sigma(Tsen); hold; sigma(Ssen); grid;
-legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MF- LQG');
+legend('|Tsen|','|Ssen|'); title('Análise da estabilidade relativa em MF - LQG');
      
