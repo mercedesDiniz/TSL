@@ -40,8 +40,6 @@ P = inv( C*inv(eye(n,n) -A)*B ); % Pré-compensador
 Aa = [  eye(ny,ny)     C*A;
        zeros(4,ny)    A  ];
 
-n = length(Aa);  % ordem do sistema
-
 Ba = [C*B; B]*P;
 
 Ca = [eye(ny,ny) zeros(ny,4)];
@@ -51,42 +49,67 @@ Da = D;
 sysa = ss(Aa,Ba,Ca,Da,Ts);
 
 figure; sigma(sysa);
+title('Principais ganhos (ou valores singulares) do sistema MIMO');
 
-%% Verificação da Controlabilidade e Observabilidade
+%% Verificação da Controlabilidade e Observabilidade da realização
+na = length(Aa);    % ordem do sistema aumentado
 Co = ctrb(Aa, Ba);  % Matriz de Controlabilidade
 Ob = obsv(Aa, Ca);  % Matriz de Observabilidade
 
 disp('Verificação da Controlabilidade:');
 disp(['> rank(Co) = ' num2str(rank(Co))]);
-if rank(Co) == n
-    disp(['== ' num2str(n) ' - O sistema é controlável' ]);
+if rank(Co) == na
+    disp(['== ' num2str(na) ' - O sistema é controlável' ]);
 else
-    disp(['!= ' num2str(n) ' - O sistema não é controlável' ]);
+    disp(['!= ' num2str(na) ' - O sistema não é controlável' ]);
 end
 
 disp('Verificação da Observabilidade:');
 disp(['> rank(Ob) = ' num2str(rank(Ob))]);
-if rank(Ob) == n
-    disp(['== ' num2str(n) ' - O sistema é observável' ]);
+if rank(Ob) == na
+    disp(['== ' num2str(na) ' - O sistema é observável' ]);
 else
     disp(['!= ' num2str(n) ' - O sistema não é observável' ]);
 end
 
-% %% Controle via realimentação de estado estimado - LQR
-% disp('Controlador LQR');
-% Q_lqr = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
-% R_lqr = 1;                                  % peso do esforço de controle
-% 
-% %% Estimador de estados - Filtro de Kalman
-% disp('Filtro de Kalman');
-% Q_kf = diag([ 1   1    1     1      1 ]);  % peso das variaveis 
-% R_kf = 1;                                  % ruído da medição
-% 
-% 
-% %% Simulação do Compensador dinâmico completo - LQG
-% t_f = 20;           % tempo de simulação
-% N = round(t_f/Ts);  % número de amostras
-% t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
+%% Projeto do filtro de Kalman
+    % x1: phi (rad): ângulo de rolagem
+    % x2: theta (rad): ângulo de inclinação
+    % x3: u_spd (m/s): velocidade longitudinal
+    % x4: v_spd (m/s): velocidade lateral 
+    % y1 = x4: v_spd (m/s): velocidade lateral
+    % y2 = x3: u_spd (m/s): velocidade longitudinal
 
+%            y1    y2   dx1 dx2 dx3 dx4
+Q_kf = diag([ 1     1    1   1   1   1 ]);
 
+%            y1     y2
+R_kf = diag([ 1e5   1e5 ]);
+
+L = ( dlqr(Aa',Ca',Q_kf, R_kf) )'
+
+% Analise do filtro de Kalman em malha fechada
+sys_kf = ss( Aa-L*Ca, L, Ca, Da, Ts );
+    % Avaliação das propriedades de rastreamento no domínio do tempo
+    figure; step(sys_kf);
+    title('Propriedades de rastreamento do filtro de Kalman');
+    
+    % Avaliação do sistema no domínio da frequência
+    Tsen_kf = sys_kf;
+    Ssen_kf = eye(2,2) -Tsen_kf;
+    figure; sigma(Tsen_kf); hold; sigma(Ssen_kf); grid;
+    title('Funções de sensibilidade do filtro de Kalman');
+    legend('|T(e^{j\omegaT_s})|','|S(e^{j\omegaT_s})|');
+    
+    % Picos de sensibilidade
+    mt_kf = max( max( sigma(Tsen_kf) ) );
+    ms_kf = max( max( sigma(Ssen_kf) ) );
+    
+    % Margens de ganho e fase
+    GmdB_kf = min( 20*log10(ms_kf/(ms_kf-1)), 20*log10(1+(1/mt_kf)) );
+    Pmdeg_kf = (180/pi)*min( (2*asin(1/(2*ms_kf)) ), (2*asin(1/(2*mt_kf)) ) );
+
+    disp('Margens de ganho e fase do filtro de Kalman:');
+    disp('GmdB = '); disp(GmdB_kf);
+    disp('Pmdeg = '); disp(Pmdeg_kf);
 
