@@ -102,14 +102,56 @@ sys_kf = ss( Aa-L*Ca, L, Ca, Da, Ts );
     legend('|T(e^{j\omegaT_s})|','|S(e^{j\omegaT_s})|');
     
     % Picos de sensibilidade
-    mt_kf = max( max( sigma(Tsen_kf) ) );
-    ms_kf = max( max( sigma(Ssen_kf) ) );
+    mt = max( max( sigma(Tsen_kf) ) );
+    ms = max( max( sigma(Ssen_kf) ) );
     
     % Margens de ganho e fase
-    GmdB_kf = min( 20*log10(ms_kf/(ms_kf-1)), 20*log10(1+(1/mt_kf)) );
-    Pmdeg_kf = (180/pi)*min( (2*asin(1/(2*ms_kf)) ), (2*asin(1/(2*mt_kf)) ) );
+    GmdB_kf = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+    Pmdeg_kf = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
 
     disp('Margens de ganho e fase do filtro de Kalman:');
     disp('GmdB = '); disp(GmdB_kf);
     disp('Pmdeg = '); disp(Pmdeg_kf);
+
+%% Projeto do LQR
+    % x1: phi (rad): ângulo de rolagem
+    % x2: theta (rad): ângulo de inclinação
+    % x3: u_spd (m/s): velocidade longitudinal
+    % x4: v_spd (m/s): velocidade lateral 
+    % y1 = x4: v_spd (m/s): velocidade lateral
+    % y2 = x3: u_spd (m/s): velocidade longitudinal
+
+ %            y1    y2   dx1 dx2 dx3 dx4
+Qlq = diag([ 1     1    1   1   1   1 ]);
+
+%            y1  y2
+Rlq = diag([ 1   1 ]);
+
+
+K = dlqr(Aa,Ba,Qlq,Rlq)
+
+% Analise do filtro do LQR em malha fechada
+sys_lqr = ss(Aa-Ba*K, Ba*K(1:2,1:2), Ca, Da, Ts);
+    % Avaliação das propriedades de rastreamento no domínio do tempo
+    figure; step(sys_lqr);
+    title('Propriedades de rastreamento do LQR');
+    
+    % Avaliação do sistema no domínio da frequência
+    Tsen_lqr = sys_lqr;
+    Ssen_lqr = eye(2,2) - Tsen_lqr;
+    figure; sigma(Tsen_lqr); hold; sigma(Ssen_lqr); grid;
+    title('Funções de sensibilidade do LQR');
+    legend('|T(e^{j\omegaT_s})|','|S(e^{j\omegaT_s})|');
+    
+    % Picos de sensibilidade
+    mt = max( max( sigma(Tsen_lqr) ) );
+    ms = max( max( sigma(Ssen_lqr) ) );
+    
+    % Margens de ganho e fase
+    GmdB_lqr = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+    Pmdeg_lqr = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+    disp('Margens de ganho e fase do LQR:');
+    disp('GmdB = '); disp(GmdB_lqr);
+    disp('Pmdeg = '); disp(Pmdeg_lqr);
 
