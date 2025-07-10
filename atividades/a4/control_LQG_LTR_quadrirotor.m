@@ -155,3 +155,72 @@ sys_lqr = ss(Aa-Ba*K, Ba*K(1:2,1:2), Ca, Da, Ts);
     disp('GmdB = '); disp(GmdB_lqr);
     disp('Pmdeg = '); disp(Pmdeg_lqr);
 
+%% Simulação do LQG
+t_f = 20;           % tempos de simulação
+N = round(t_f/Ts);  % número de amostras
+t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
+
+    % Sinal de referencia
+    r1 = zeros(1,N); r1(round(N/3):end) = 1;   % v_spd (x4)
+    r2 = zeros(1,N); r2(round(N/3):end) = 1;   % u_spd (x3)
+    r = [r1; r2];                       
+
+    % Disturbios na entrada e saida
+    w = 0 * randn(n, N);  
+    v = 0 * randn(ny, N);
+
+    % Condições iniciais do modelo nominal
+    x = zeros(n, N);
+    y = zeros(ny, N);
+    u = zeros(nu, N);
+    du = zeros(nu, N); 
+
+    % Condições iniciais do modelo aumentado
+    xa = zeros(na, N); xa(:,1) = zeros(na,1);
+    ya = zeros(ny, N); 
+
+    % Condições iniciais das variaveis estimadas
+  
+for k = 2:N
+    % Modelo em espaço de estados
+    x(:,k)     = A * x(:,k-1) + B * du(:,k-1) + w(:,k-1);
+    y(:,k-1)   = C * x(:,k-1) + v(:,k-1); 
+
+    % Modelo em espaço de estados aumentado com o filtro de Kalman
+    ya(:,k-1) = Ca * xa(:,k-1);
+    xa(:,k) = Aa * xa(:,k-1) + Ba * du(:,k-1) + L * (r(:,k-1) - ya(:,k-1));
+
+    % Lei de controle de realimentação de estados
+     du(:,k) = K(:,1:ny) * (r(:,k) - xa(1:ny, k));
+
+    % Passando du(k) pelo integrador discreto 
+    u(:,k) = u(:,k-1) + du(:,k);
+
+    % Saturação dos atuadores
+    u(:,k) = min(max(u(:,k), -1), 1);
+end
+
+%% Plots
+
+figure;
+subplot(3,1,1);
+plot(t, r1, 'k--', t, y(1,:), 'b', t, ya(1,:), ':r');
+ylabel('v_{spd} (m/s)');
+legend('Ref', 'Saída', 'Estimada');
+grid on;
+
+subplot(3,1,2);
+plot(t, r2, 'k--', t, y(2,:), 'b', t, ya(2,:), ':r');
+ylabel('u_{spd} (m/s)');
+legend('Ref', 'Saída', 'Estimada');
+grid on;
+
+subplot(3,1,3);
+plot(t, u(1,:), 'r', t, u(2,:), 'b');
+xlabel('Tempo (s)');
+ylabel('Controle');
+legend('u_1 (lat)', 'u_2 (long)');
+grid on;
+sgtitle('Simulação LQG MIMO');
+
+
