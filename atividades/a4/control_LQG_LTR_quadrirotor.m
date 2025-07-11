@@ -19,7 +19,7 @@ load([path_my, path_tsl]);
 % u2: thrust longitudinal: saturações [-1;1]
 
 %% Modelo em Espaço de Estado em Tempo Discreto
-Ts = quadrotor_model.Ts
+Ts = quadrotor_model.Ts;
 
 A = quadrotor_model.A(1:4,1:4);
 B = quadrotor_model.B(1:4,1:2);
@@ -81,10 +81,10 @@ end
     % y2 = x3: u_spd (m/s): velocidade longitudinal
 
 %            y1    y2   dx1 dx2 dx3 dx4
-Q_kf = diag([ 1     1    1   1   1   1 ]);
+Q_kf = diag([ 1     1    1   1   1e-3   1e-3 ]);
 
 %            y1     y2
-R_kf = diag([ 1e5   1e5 ]);
+R_kf = diag([ 1e4   1e4 ]);
 
 L = ( dlqr(Aa',Ca',Q_kf, R_kf) )'
 
