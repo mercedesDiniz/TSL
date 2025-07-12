@@ -130,8 +130,8 @@ Rlq = diag([ 1   1 ]);
 
 K = dlqr(Aa,Ba,Qlq,Rlq)
 
-% Analise do filtro do LQR em malha fechada
-sys_lqr = ss(Aa-Ba*K, Ba*K(1:2,1:2), Ca, Da, Ts);
+% Analise do LQR em malha fechada
+sys_lqr = ss(Aa-Ba*K, Ba*K(:,1:ny), Ca, Da, Ts);
     % Avaliação das propriedades de rastreamento no domínio do tempo
     figure; step(sys_lqr);
     title('Propriedades de rastreamento do LQR');
@@ -184,11 +184,11 @@ t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
 for k = 2:N
     % Modelo em espaço de estados
     x(:,k)     = A * x(:,k-1) + B * du(:,k-1) + w(:,k-1);
-    y(:,k-1)   = C * x(:,k-1) + v(:,k-1); 
+    y(:,k-1)   = C * x(:,k) + v(:,k); 
 
     % Modelo em espaço de estados aumentado com o filtro de Kalman
-    ya(:,k-1) = Ca * xa(:,k-1);
     xa(:,k) = Aa * xa(:,k-1) + Ba * du(:,k-1) + L * (r(:,k-1) - ya(:,k-1));
+    ya(:,k) = Ca * xa(:,k);
 
     % Lei de controle de realimentação de estados
      du(:,k) = K(:,1:ny) * (r(:,k) - xa(1:ny, k));
@@ -200,8 +200,42 @@ for k = 2:N
     u(:,k) = min(max(u(:,k), -1), 1);
 end
 
-%% Plots
+% Analise do LQG em malha fechada
+A_comp = [ Aa    -Ba*K; 
+          L*Ca   Aa-Ba*K-L*Ca];
 
+B_comp = [Ba*K(:,1:ny); Ba*K(:,1:ny)];
+
+C_comp = [Ca zeros(ny, na)];
+
+sys_lqg = ss(A_comp, B_comp, C_comp, Da, Ts);
+    % Avaliação das propriedades de rastreamento no domínio do tempo
+    figure; step(sys_lqg);
+    title('Propriedades de rastreamento do LQG');
+    
+    % Avaliação do sistema no domínio da frequência
+    Tsen_lqg = sys_lqg;
+    Ssen_lqg = eye(2,2) - Tsen_lqg;
+    figure; sigma(Tsen_lqg); hold; sigma(Ssen_lqg); grid;
+    title('Funções de sensibilidade do LQG');
+    legend('|T(e^{j\omegaT_s})|','|S(e^{j\omegaT_s})|');
+    
+    % Picos de sensibilidade
+    mt = max( max( sigma(Tsen_lqg) ) );
+    ms = max( max( sigma(Tsen_lqg) ) );
+    
+    % Margens de ganho e fase
+    GmdB_lqg = min( 20*log10(ms/(ms-1)), 20*log10(1+(1/mt)) );
+    Pmdeg_lqg = (180/pi)*min( (2*asin(1/(2*ms)) ), (2*asin(1/(2*mt)) ) );
+
+    disp('Margens de ganho e fase do LQG:');
+    disp('GmdB = '); disp(GmdB_lqg);
+    disp('Pmdeg = '); disp(Pmdeg_lqg);
+
+
+
+
+%% Plots
 figure;
 subplot(3,1,1);
 plot(t, r1, 'k--', t, y(1,:), 'b', t, ya(1,:), ':r');
@@ -221,6 +255,5 @@ xlabel('Tempo (s)');
 ylabel('Controle');
 legend('u_1 (lat)', 'u_2 (long)');
 grid on;
-sgtitle('Simulação LQG MIMO');
-
+%sgtitle('Simulação LQG MIMO');
 
