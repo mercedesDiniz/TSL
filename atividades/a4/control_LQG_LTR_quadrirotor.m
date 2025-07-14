@@ -162,25 +162,19 @@ t   = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
 
     % Sinal de referencia
     r1 = zeros(1,N); r1(round(N/3):end) = 1;   % v_spd (x4)
-    r2 = zeros(1,N); r2(round(N/3):end) = 1;   % u_spd (x3)
-    r  = [r1; r2];                       
+    r2 = zeros(1,N); r2(round(N/3):end) = 1;   % u_spd (x3)                    
 
     % Disturbios na entrada e saida
     w = 0 * randn(n, N);  
     v = 0 * randn(ny, N);
 
     % Condições iniciais do modelo nominal
-    x  = zeros(n, N);
-    y  = zeros(ny, N);
-    u  = zeros(nu, N);
-    du = zeros(nu, N); 
+    x  = zeros(n, N);  y  = zeros(ny, N);
+    u  = zeros(nu, N); du = zeros(nu, N); 
 
     % Condições iniciais do modelo aumentado
-    xa = zeros(na, N); xa(:,1) = zeros(na,1);
-    ya = zeros(ny, N); 
+    xa = zeros(na, N); ya = zeros(ny, N); 
 
-    % Condições iniciais das variaveis estimadas
-  
 for k = 2:N
     % Modelo em espaço de estados
     x(:,k) = A * x(:,k-1) + B * u(:,k-1) + w(:,k-1);
@@ -191,7 +185,7 @@ for k = 2:N
     ya(:,k) = Ca * xa(:,k);
 
     % Lei de controle de realimentação de estados
-     du(:,k) = K(:,1:ny) * (r(:,k) - xa(1:ny, k));
+    du = K * ([r1 ; r2; zeros(1,N); zeros(1,N); zeros(1,N); zeros(1,N)] - xa(:, k));
 
     % Passando du(k) pelo integrador discreto e o pré-compensador
     u(:,k) = u(:,k-1) + P*du(:,k);
@@ -231,6 +225,10 @@ sys_lqg = ss(A_comp, B_comp, C_comp, Da, Ts);
     disp('Margens de ganho e fase do LQG:');
     disp('GmdB = '); disp(GmdB_lqg);
     disp('Pmdeg = '); disp(Pmdeg_lqg);
+
+    % Analise dos poles e autovalores do sistema
+    disp('Autovalores do LQG:');
+    disp(eig(sys_lqg));
 
 %% Plots
 figure;
