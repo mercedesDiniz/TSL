@@ -162,11 +162,11 @@ t   = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
 
     % Sinal de referencia
     r1 = zeros(1,N); r1(round(N/3):end) = 1;   % v_spd (x4)
-    r2 = zeros(1,N); r2(round(N/3):end) = 1;   % u_spd (x3)                    
+    r2 = zeros(1,N); r2(round(N/4):end) = 1;   % u_spd (x3)                    
 
     % Disturbios na entrada e saida
-    w(:, 1:round(N/2)) = 0; w(:, round(N/2)+1:N) = 1*1e-2;    
-    v = 1*wgn(1, N, 1e-3, 'linear'); 
+    w(:, 1:round(N/2)) = 0; w(:, round(N/2)+1:N) = 0*1e-2;    
+    v = 0*wgn(1, N, 1e-3, 'linear'); 
 
     % Condições iniciais do modelo nominal
     x  = zeros(n, N);  y  = zeros(ny, N);
