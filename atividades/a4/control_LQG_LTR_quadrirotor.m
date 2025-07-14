@@ -8,7 +8,7 @@ path_my = 'D:\PPGEE-UFPA\2025.1-TSL-Antonio\';
 path_lasse = 'C:\Users\Mercedes Diniz\Documents\PPGEE-UFPA\TSL-2025.1[Silveira]\';
 path_tsl = 'atividades\a4\modelo\quadrotor_model.mat';
 
-load([path_my, path_tsl]);
+load([path_lasse, path_tsl]);
 
 % x1: phi (rad): ângulo de rolagem
 % x2: theta (rad): ângulo de inclinação
@@ -81,7 +81,7 @@ end
     % y2 = x3: u_spd (m/s): velocidade longitudinal
 
 %            y1    y2   dx1 dx2 dx3 dx4
-Q_kf = diag([ 1     1    1   1   1e-3   1e-3 ]);
+Q_kf = diag([ 1     1    1   1   1   1 ]);
 
 %            y1     y2
 R_kf = diag([ 1e4   1e4 ]);
@@ -122,7 +122,7 @@ sys_kf = ss( Aa-L*Ca, L, Ca, Da, Ts );
     % y2 = x3: u_spd (m/s): velocidade longitudinal
 
  %            y1    y2   dx1 dx2 dx3 dx4
-Qlq = diag([ 1     1    1   1   1   1 ]);
+Qlq = diag([ 1e-1     1e-1    1   1   1e1   1e1 ]);
 
 %            y1  y2
 Rlq = diag([ 1   1 ]);
@@ -156,23 +156,23 @@ sys_lqr = ss(Aa-Ba*K, Ba*K(:,1:ny), Ca, Da, Ts);
     disp('Pmdeg = '); disp(Pmdeg_lqr);
 
 %% Simulação do LQG
-t_f = 20;           % tempos de simulação
-N = round(t_f/Ts);  % número de amostras
-t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
+t_f = 30;           % tempos de simulação
+N   = round(t_f/Ts);  % número de amostras
+t   = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
 
     % Sinal de referencia
     r1 = zeros(1,N); r1(round(N/3):end) = 1;   % v_spd (x4)
     r2 = zeros(1,N); r2(round(N/3):end) = 1;   % u_spd (x3)
-    r = [r1; r2];                       
+    r  = [r1; r2];                       
 
     % Disturbios na entrada e saida
     w = 0 * randn(n, N);  
     v = 0 * randn(ny, N);
 
     % Condições iniciais do modelo nominal
-    x = zeros(n, N);
-    y = zeros(ny, N);
-    u = zeros(nu, N);
+    x  = zeros(n, N);
+    y  = zeros(ny, N);
+    u  = zeros(nu, N);
     du = zeros(nu, N); 
 
     % Condições iniciais do modelo aumentado
@@ -183,18 +183,18 @@ t = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
   
 for k = 2:N
     % Modelo em espaço de estados
-    x(:,k)     = A * x(:,k-1) + B * du(:,k-1) + w(:,k-1);
-    y(:,k-1)   = C * x(:,k) + v(:,k); 
+    x(:,k) = A * x(:,k-1) + B * u(:,k-1) + w(:,k-1);
+    y(:,k) = C * x(:,k) + v(:,k); 
 
     % Modelo em espaço de estados aumentado com o filtro de Kalman
-    xa(:,k) = Aa * xa(:,k-1) + Ba * du(:,k-1) + L * (r(:,k-1) - ya(:,k-1));
+    xa(:,k) = Aa * xa(:,k-1) + Ba * du(:,k-1) + L * (y(:,k-1) - ya(:,k-1));
     ya(:,k) = Ca * xa(:,k);
 
     % Lei de controle de realimentação de estados
      du(:,k) = K(:,1:ny) * (r(:,k) - xa(1:ny, k));
 
-    % Passando du(k) pelo integrador discreto 
-    u(:,k) = u(:,k-1) + du(:,k);
+    % Passando du(k) pelo integrador discreto e o pré-compensador
+    u(:,k) = u(:,k-1) + P*du(:,k);
 
     % Saturação dos atuadores
     u(:,k) = min(max(u(:,k), -1), 1);
@@ -231,9 +231,6 @@ sys_lqg = ss(A_comp, B_comp, C_comp, Da, Ts);
     disp('Margens de ganho e fase do LQG:');
     disp('GmdB = '); disp(GmdB_lqg);
     disp('Pmdeg = '); disp(Pmdeg_lqg);
-
-
-
 
 %% Plots
 figure;
