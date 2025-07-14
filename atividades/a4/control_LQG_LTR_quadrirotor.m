@@ -165,8 +165,8 @@ t   = 0:Ts:N*Ts-Ts;   % vetor de tempo discreto
     r2 = zeros(1,N); r2(round(N/3):end) = 1;   % u_spd (x3)                    
 
     % Disturbios na entrada e saida
-    w = 0 * randn(n, N);  
-    v = 0 * randn(ny, N);
+    w(:, 1:round(N/2)) = 0; w(:, round(N/2)+1:N) = 1*1e-2;    
+    v = 1*wgn(1, N, 1e-3, 'linear'); 
 
     % Condições iniciais do modelo nominal
     x  = zeros(n, N);  y  = zeros(ny, N);
